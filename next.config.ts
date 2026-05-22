@@ -1,7 +1,13 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Keep heavy server deps out of the Turbopack/Webpack bundle — cuts dev memory a lot
+  transpilePackages: [
+    '@repo/db',
+    '@repo/shared',
+    '@repo/validators',
+    '@repo/ai',
+    '@repo/audio',
+  ],
   serverExternalPackages: [
     '@prisma/client',
     '@prisma/adapter-pg',

@@ -1,27 +1,11 @@
 import Link from "next/link"
-import { requireSession } from "@/lib/auth-server"
-import { prisma } from "@/lib/prisma"
+import { getDashboardProfile } from "@/actions/user"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, Mic, ArrowRight } from "lucide-react"
 
 export default async function DashboardPage() {
-  const session = await requireSession()
-
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: session.user.id },
-    select: {
-      name: true,
-      role: true,
-      freeInterviewUsed: true,
-      _count: {
-        select: {
-          interviews: true,
-          resumes: { where: { isActive: true } },
-        },
-      },
-    },
-  })
+  const user = await getDashboardProfile()
 
   const name = user.name?.split(" ")[0] ?? "there"
   const interviewCount = user._count.interviews
@@ -98,7 +82,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <Button asChild variant={resumeCount > 0 ? "default" : "secondary"}>
-              <Link href="/interview/new">
+              <Link href="/interview/setup">
                 {resumeCount > 0 ? "Start interview" : "Upload resume first"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>

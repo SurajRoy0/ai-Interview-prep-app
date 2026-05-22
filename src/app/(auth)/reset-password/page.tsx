@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import { resetPasswordSchema, type ResetPasswordValues } from "@repo/validators"
 import { authClient } from "@/lib/auth-client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -11,18 +11,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { toast } from "sonner"
-
-const schema = z
-  .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirm: z.string(),
-  })
-  .refine(d => d.password === d.confirm, {
-    message: "Passwords do not match",
-    path: ["confirm"],
-  })
-
-type Values = z.infer<typeof schema>
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -36,7 +24,7 @@ function ResetPasswordForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) })
+  } = useForm<ResetPasswordValues>({ resolver: zodResolver(resetPasswordSchema) })
 
   if (!token) {
     return (
@@ -78,7 +66,7 @@ function ResetPasswordForm() {
     )
   }
 
-  async function onSubmit(data: Values) {
+  async function onSubmit(data: ResetPasswordValues) {
     if (!token) return
     setIsLoading(true)
     const { error } = await authClient.resetPassword({

@@ -1,0 +1,841 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================================================
+// ENUMS
+// ======================================================
+
+enum UserRole {
+  CANDIDATE
+  RECRUITER
+  ADMIN
+}
+
+enum Ecosystem {
+  JAVASCRIPT
+  PYTHON
+  JAVA
+  GO
+  OTHER
+}
+
+enum ExperienceLevel {
+  FRESHER
+  JUNIOR
+  MID
+  SENIOR
+}
+
+enum InterviewStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum InterviewType {
+  FREE
+  PAID
+  PREMIUM
+}
+
+enum QuestionType {
+  HR
+  RESUME_BASED
+  TECHNICAL_CONCEPTUAL
+  OUTPUT_PREDICTION
+  DEBUGGING
+  ARCHITECTURE
+  COMMUNICATION
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+enum ConfidenceLevel {
+  WEAK
+  IMPROVING
+  STRONG
+}
+
+enum VisibilityStatus {
+  PRIVATE
+  PUBLIC
+  RECRUITER_VISIBLE
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum ActivityType {
+  DEBUGGING // Show broken code, candidate finds bug
+  CODE_CORRECTION // Show broken code, candidate fixes in editor
+  OUTPUT_PREDICTION // Show code, candidate predicts output
+  RESUME_DEFENCE // Defend a specific resume claim
+  PRIORITISATION // Rank/order scenarios
+  COMMUNICATION // Explain concept simply
+  SYSTEM_DESIGN_MINI // Quick architecture question with diagram prompt
+}
+
+enum InputMode {
+  VOICE // Candidate speaks only
+  TEXT // Textarea opens
+  CODE_EDITOR // Monaco editor opens
+  VOICE_AND_CODE // Both voice + editor active simultaneously
+  VOICE_AND_TEXT // Both voice + textarea active simultaneously
+}
+
+enum QuestionCategory {
+  RESUME_BASED
+  FOLLOW_UP_DEPTH
+  CONCEPTUAL
+  SCENARIO
+  ACTIVITY
+  BEHAVIORAL
+  PRESSURE
+  REFLECTION
+  COMMUNICATION_SIMPLIFICATION
+  HR
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum PsychologicalIntent {
+  CONFIDENCE_CHECK
+  DEPTH_PROBE
+  PRESSURE_TEST
+  CLARITY_CHECK
+  REASONING_EVAL
+  AUTHENTICITY_CHECK
+  REFLECTION_TRIGGER
+}
+
+enum ReportStatus {
+  PENDING
+  GENERATING
+  DONE
+  FAILED
+}
+
+enum ATSReportStatus {
+  PENDING
+  GENERATING
+  DONE
+  FAILED
+}
+
+enum ImprovementPriority {
+  CRITICAL // Fix before next interview
+  HIGH // Important for role target
+  MEDIUM // Good to address
+  LOW // Nice to have
+}
+
+// ======================================================
+// USER
+// ======================================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  image        String?
+  passwordHash String?
+  role         UserRole @default(CANDIDATE)
+
+  ecosystem       Ecosystem?
+  experienceLevel ExperienceLevel?
+  targetRole      String?
+
+  isActive      Boolean @default(true)
+  emailVerified Boolean @default(false)
+
+  visibilityStatus VisibilityStatus @default(PRIVATE)
+
+  freeInterviewUsed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resumes       Resume[]
+  interviews    Interview[]
+  skillScores   SkillScore[]
+  subscriptions Subscription[]
+  payments      Payment[]
+  credits       InterviewCredit[]
+
+  sessions Session[]
+  accounts Account[]
+
+  auditLogs AuditLog[]
+
+  recruiterProfile RecruiterProfile?
+
+  @@index([email])
+  @@index([role])
+  @@index([ecosystem])
+}
+
+// ======================================================
+// BETTER AUTH
+// ======================================================
+
+model Session {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token String @unique
+
+  expiresAt DateTime
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([token])
+  @@map("AuthSession")
+}
+
+model Account {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accountId  String
+  providerId String
+
+  accessToken  String?
+  refreshToken String?
+
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+
+  scope   String?
+  idToken String?
+
+  password String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id String @id @default(cuid())
+
+  identifier String
+  value      String
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// ======================================================
+// RESUME
+// ======================================================
+
+model Resume {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String?
+
+  fileKey String?
+  fileUrl String?
+
+  rawText       String @db.Text
+  rawTextLength Int?
+
+  parsedData Json
+
+  ecosystem Ecosystem?
+
+  version Int @default(1)
+
+  isActive Boolean @default(true)
+
+  parseStatus JobStatus @default(PENDING)
+
+  // legacy compatibility
+  atsScore    Int?
+  atsFeedback Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interviews Interview[]
+
+  atsReport ATSReport?
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([parseStatus])
+}
+
+// ======================================================
+// ATS REPORT
+// ======================================================
+
+model ATSReport {
+  id String @id @default(cuid())
+
+  resumeId String @unique
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  userId String
+
+  status JobStatus @default(PENDING)
+
+  overallScore     Int?
+  keywordScore     Int?
+  structureScore   Int?
+  impactScore      Int?
+  readabilityScore Int?
+
+  strengths String[]
+
+  criticalIssues Json?
+  suggestions    Json?
+
+  missingKeywords String[]
+
+  overallSummary String? @db.Text
+
+  authenticityScore Int?
+  authenticityNotes Json?
+
+  generatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ======================================================
+// INTERVIEW
+// ======================================================
+
+model Interview {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resumeId String?
+  resume   Resume? @relation(fields: [resumeId], references: [id])
+
+  type InterviewType
+
+  status InterviewStatus @default(PENDING)
+
+  title String?
+
+  targetRole      String?
+  experienceLevel ExperienceLevel?
+
+  interviewMode String?
+
+  interviewPlan Json?
+
+  planGenerated Boolean @default(false)
+
+  totalQuestions Int @default(8)
+
+  currentTurnIndex Int @default(0)
+
+  activitiesCompleted Int @default(0)
+  activitiesPlanned   Int @default(0)
+
+  overallScore Int?
+
+  communicationScore Int?
+  technicalScore     Int?
+  confidenceScore    Int?
+
+  authenticityScore Int?
+
+  weakTopics   String[]
+  strongTopics String[]
+
+  report Json?
+
+  reportStatus JobStatus @default(PENDING)
+
+  ablyChannelId String?
+
+  durationSeconds Int?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  turns InterviewTurn[]
+
+  activities InterviewActivity[]
+
+  skillScores SkillScore[]
+
+  analytics InterviewAnalytics?
+
+  reportModel InterviewReport?
+
+  suggestions ImprovementSuggestion[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+// ======================================================
+// INTERVIEW TURN
+// ======================================================
+
+model InterviewTurn {
+  id String @id @default(cuid())
+
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  turnIndex Int
+
+  role String
+
+  questionType QuestionType?
+
+  questionCategory QuestionCategory?
+
+  questionDifficulty QuestionDifficulty?
+
+  psychologicalIntent PsychologicalIntent?
+
+  targetSkills String[]
+
+  question String? @db.Text
+  answer   String? @db.Text
+
+  inputMode InputMode?
+
+  codeSnippetShown  String? @db.Text
+  codeEditorContent String? @db.Text
+
+  audioKey String?
+
+  silenceDurationMs Int?
+
+  hesitationDetected Boolean @default(false)
+
+  speechDurationMs Int?
+
+  isFollowUp Boolean @default(false)
+
+  followUpReason String?
+
+  turnScore Int?
+
+  topicScored String?
+
+  topicConfidence ConfidenceLevel?
+
+  tokenUsage Int?
+  latencyMs  Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([interviewId])
+  @@index([interviewId, turnIndex])
+}
+
+// ======================================================
+// INTERVIEW ACTIVITY
+// ======================================================
+
+model InterviewActivity {
+  id String @id @default(cuid())
+
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  activityIndex Int
+
+  type ActivityType
+
+  title String?
+
+  prompt String @db.Text
+
+  codeSnippet String? @db.Text
+
+  expectedAnswer String? @db.Text
+
+  candidateVoiceAnswer String? @db.Text
+  candidateCodeAnswer  String? @db.Text
+  candidateTextAnswer  String? @db.Text
+
+  score Int?
+
+  evaluation Json?
+
+  skillsEvaluated String[]
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  skipped Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([interviewId])
+  @@index([interviewId, activityIndex])
+}
+
+// ======================================================
+// INTERVIEW REPORT
+// ======================================================
+
+model InterviewReport {
+  id String @id @default(cuid())
+
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  userId String
+
+  overallScore Int
+
+  communicationScore Int
+  technicalScore     Int
+  confidenceScore    Int
+
+  authenticityScore Int?
+
+  performanceSummary String @db.Text
+
+  readinessLevel String
+
+  readinessSummary String @db.Text
+
+  topStrengths String[]
+
+  weakTopics  Json
+  topicScores Json
+
+  activitySummary Json?
+
+  communicationAnalysis Json
+  confidenceAnalysis    Json
+  authenticityAnalysis  Json?
+
+  isJsEcosystem Boolean @default(false)
+
+  upsellEligible Boolean @default(false)
+
+  generatedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([interviewId])
+}
+
+// ======================================================
+// IMPROVEMENT SUGGESTION
+// ======================================================
+
+model ImprovementSuggestion {
+  id String @id @default(cuid())
+
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  userId String
+
+  topic String
+
+  priority ImprovementPriority
+
+  title String
+
+  description String @db.Text
+
+  specificAction String @db.Text
+
+  resourceHint String?
+
+  relatedTurnIds String[]
+
+  dismissed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([interviewId])
+  @@index([topic])
+  @@index([priority])
+}
+
+// ======================================================
+// SKILL SCORE
+// ======================================================
+
+model SkillScore {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  topic String
+
+  score Int
+
+  previousScore Int?
+  delta         Int?
+
+  confidence ConfidenceLevel
+
+  evidenceTurnIds String[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, topic])
+  @@index([interviewId])
+  @@index([topic])
+}
+
+// ======================================================
+// INTERVIEW ANALYTICS
+// ======================================================
+
+model InterviewAnalytics {
+  id String @id @default(cuid())
+
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  totalTokens Int?
+
+  totalCostPaise Int?
+
+  avgLatencyMs Int?
+
+  avgAiLatencyMs  Int?
+  avgSttLatencyMs Int?
+  avgTtsLatencyMs Int?
+
+  totalSpeakingSeconds Int?
+  totalSilenceSeconds  Int?
+
+  interruptionCount Int?
+
+  hesitationCount Int?
+
+  avgAnswerDurationMs Int?
+
+  abandonedAtTurn Int?
+
+  completionRate Float?
+
+  activitiesCompleted Int?
+
+  createdAt DateTime @default(now())
+}
+
+// ======================================================
+// INTERVIEW CREDIT
+// ======================================================
+
+model InterviewCredit {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  credits Int @default(0)
+
+  reason String?
+
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ======================================================
+// PAYMENT
+// ======================================================
+
+model Payment {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amountPaise Int
+
+  currency String @default("INR")
+
+  provider String @default("razorpay")
+
+  providerOrderId   String?
+  providerPaymentId String?
+  providerSignature String?
+
+  status PaymentStatus
+
+  planName String?
+
+  creditsGranted Int?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([providerPaymentId])
+}
+
+// ======================================================
+// SUBSCRIPTION
+// ======================================================
+
+model Subscription {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planName String
+
+  status SubscriptionStatus
+
+  interviewsLeft Int @default(0)
+
+  startsAt DateTime
+  endsAt   DateTime
+
+  provider String @default("razorpay")
+
+  providerSubId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+}
+
+// ======================================================
+// AUDIT LOG
+// ======================================================
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  action String
+
+  entity   String?
+  entityId String?
+
+  metadata Json?
+
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ======================================================
+// FEATURE FLAG
+// ======================================================
+
+model FeatureFlag {
+  id String @id @default(cuid())
+
+  key String @unique
+
+  enabled Boolean @default(false)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ======================================================
+// RECRUITER PROFILE
+// ======================================================
+
+model RecruiterProfile {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName String?
+  designation String?
+  website     String?
+
+  isVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

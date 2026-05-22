@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import { registerSchema, type RegisterValues } from "@repo/validators"
 import { signUp, signIn } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -11,14 +11,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { toast } from "sonner"
-
-const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-})
-
-type RegisterValues = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -48,7 +40,7 @@ export default function RegisterPage() {
       toast.error(msg)
     } else {
       toast.success("Account created! Check your email for the verification code.")
-      router.push(`/verify?email=${encodeURIComponent(data.email)}`)
+      router.push(`/verify-email?email=${encodeURIComponent(data.email)}`)
     }
   }
 

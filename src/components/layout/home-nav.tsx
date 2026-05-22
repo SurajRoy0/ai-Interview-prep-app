@@ -2,9 +2,9 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/shared/theme-toggle"
 import type { Session } from "@/lib/auth"
-import { SignOutButton } from "@/components/common/sign-out-button"
+import { SignOutButton } from "@/components/shared/sign-out-button"
 
 interface HomeNavProps {
   session: Session | null

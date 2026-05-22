@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { devOnlyGuard } from '@/lib/dev-guard'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@repo/db'
 
 export async function POST() {
   const guard = devOnlyGuard()
@@ -11,12 +11,18 @@ export async function POST() {
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin12345'
   const adminName = 'Admin'
 
+  const adminDefaults = {
+    role: 'ADMIN' as const,
+    emailVerified: true,
+    isActive: true,
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: adminEmail } })
 
   if (existing) {
     await prisma.user.update({
       where: { id: existing.id },
-      data: { role: 'ADMIN', emailVerified: true },
+      data: adminDefaults,
     })
 
     return NextResponse.json({
@@ -25,7 +31,7 @@ export async function POST() {
         email: adminEmail,
         password: adminPassword,
         created: false,
-        message: 'Admin user already exists — role and verification updated.',
+        message: 'Admin user already exists — role, verification, and active status updated.',
       },
     })
   }
@@ -40,7 +46,7 @@ export async function POST() {
 
   await prisma.user.update({
     where: { email: adminEmail },
-    data: { role: 'ADMIN', emailVerified: true },
+    data: adminDefaults,
   })
 
   return NextResponse.json({

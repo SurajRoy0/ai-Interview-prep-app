@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server'
+import { ErrorCodes, isDevelopment } from '@repo/shared'
 
-export function isDevelopment(): boolean {
-  return process.env.NODE_ENV === 'development'
-}
+export { isDevelopment }
 
 export function devOnlyGuard(): NextResponse | null {
   if (!isDevelopment()) {
     return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Only available in development' } },
+      {
+        success: false,
+        error: { code: ErrorCodes.FORBIDDEN, message: 'Only available in development' },
+      },
       { status: 403 },
     )
   }

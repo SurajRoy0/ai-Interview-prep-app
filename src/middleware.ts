@@ -18,7 +18,7 @@ const PUBLIC_PATHS = [
   '/register',
   '/forgot-password',
   '/reset-password',
-  '/verify',
+  '/verify-email',
   '/api/auth',
   '/api/seed',
   '/api/reset',
@@ -28,7 +28,7 @@ const PUBLIC_PATHS = [
 const ADMIN_PATHS = ['/admin']
 
 // Auth pages that logged-in users should be bounced away from
-// /verify is excluded — users may need to verify email even with a partial session
+// /verify-email is excluded — users may need to verify email even with a partial session
 const AUTH_ONLY_PATHS = ['/login', '/register', '/forgot-password', '/reset-password']
 
 export async function middleware(req: NextRequest) {

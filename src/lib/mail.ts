@@ -1,5 +1,5 @@
-import { logger } from '@/lib/logger'
-import { isDevelopment } from '@/lib/dev-guard'
+import { logger } from '@repo/shared'
+import { isDevelopment } from '@repo/shared'
 
 export async function sendEmail(to: string, title: string, content: string) {
   if (isDevelopment()) {

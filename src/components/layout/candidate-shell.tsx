@@ -11,13 +11,13 @@ import {
   Settings,
 } from "lucide-react"
 import type { Session } from "@/lib/auth"
-import { UserAvatar } from "@/components/common/user-avatar"
-import { SignOutButton } from "@/components/common/sign-out-button"
+import { UserAvatar } from "@/components/shared/user-avatar"
+import { SignOutButton } from "@/components/shared/sign-out-button"
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/resume/upload", label: "Resume", icon: FileText },
-  { href: "/interview/new", label: "Interview", icon: Mic },
+  { href: "/interview/setup", label: "Interview", icon: Mic },
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
 ]

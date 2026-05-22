@@ -1,10 +1,8 @@
-import { ZodSchema } from 'zod'
-import { AppError } from './errors'
-import { logger } from './logger'
-import type { ApiResponse } from '@/types/api.types'
+import type { ZodSchema } from '@repo/validators'
+import { AppError, type ApiResponse } from '@repo/shared'
+import { logger } from '@repo/shared'
 import { nanoid } from 'nanoid'
-// import { getServerSession } from 'next-auth' // Uncomment when NextAuth is fully setup
-// import { authOptions } from './auth'
+import { auth } from './auth'
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -35,12 +33,11 @@ export function apiHandler<TBody = unknown, TResult = unknown>(
       // Auth check
       let userId: string | undefined
       if (options.requireAuth) {
-        // const session = await getServerSession(authOptions)
-        // if (!session?.user?.id) {
-        //   return jsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required', requestId } }, 401)
-        // }
-        // userId = session.user.id
-        // TODO: Replace with real auth check once NextAuth v5 is wired up
+        const session = await auth.api.getSession({ headers: req.headers })
+        if (!session?.user?.id) {
+          return jsonResponse({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required', requestId } }, 401)
+        }
+        userId = session.user.id
       }
 
       // Body parsing + validation

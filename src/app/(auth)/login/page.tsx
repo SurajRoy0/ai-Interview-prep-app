@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import { loginSchema, type LoginValues } from "@repo/validators"
 import { signIn } from "@/lib/auth-client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -11,13 +11,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { toast } from "sonner"
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-})
-
-type LoginValues = z.infer<typeof loginSchema>
 
 function LoginForm() {
   const router = useRouter()
@@ -48,7 +41,7 @@ function LoginForm() {
 
       if (isUnverified) {
         toast.info("Please verify your email first.")
-        router.push(`/verify?email=${encodeURIComponent(data.email)}`)
+        router.push(`/verify-email?email=${encodeURIComponent(data.email)}`)
         return
       }
 
