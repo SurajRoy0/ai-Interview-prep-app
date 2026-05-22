@@ -1,9 +1,9 @@
 import { Job } from 'bullmq'
 import { prisma } from '@repo/db'
 import { generateAtsReport } from '@repo/ai'
-import type { ParsedResumeData } from '@repo/shared'
+import type { ParsedResumeData, AtsJobData } from '@repo/shared'
 
-export default async function atsProcessor(job: Job) {
+export default async function atsProcessor(job: Job<AtsJobData>) {
   const { jobProfileId } = job.data
 
   console.log(`[ATS Worker] Generating report for Profile: ${jobProfileId}`)

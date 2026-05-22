@@ -1,18 +1,18 @@
 import 'dotenv/config' // Auto-loads root ../.env when running from script
 import { Worker } from 'bullmq'
 import { redisConnection } from './queues/client.js'
-import { QUEUES } from './queues/definitions.js'
+import { QUEUE_NAMES } from '@repo/shared'
 import resumeProcessor from './processors/resume.processor.js'
 import atsProcessor from './processors/ats.processor.js'
 
 console.log('🚀 Starting Background Workers...')
 
-const resumeWorker = new Worker(QUEUES.RESUME, resumeProcessor, {
+const resumeWorker = new Worker(QUEUE_NAMES.RESUME_PARSE, resumeProcessor, {
   connection: redisConnection,
   concurrency: 5
 })
 
-const atsWorker = new Worker(QUEUES.ATS, atsProcessor, {
+const atsWorker = new Worker(QUEUE_NAMES.ATS_GENERATE, atsProcessor, {
   connection: redisConnection,
   concurrency: 5
 })

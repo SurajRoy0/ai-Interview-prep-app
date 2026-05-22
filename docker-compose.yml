@@ -16,5 +16,23 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - foxtel_redisdata:/data
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "8001:5540"
+    volumes:
+      - foxtel_redisinsight:/data
+
 volumes:
   foxtel_pgdata:
+  foxtel_redisdata:
+  foxtel_redisinsight:

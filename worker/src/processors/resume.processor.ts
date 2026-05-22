@@ -1,13 +1,14 @@
 import { Job } from 'bullmq'
 import { prisma } from '@repo/db'
 import { extractTextFromPdf, parseResumeData } from '@repo/ai'
+import type { ResumeJobData } from '@repo/shared'
 import fs from 'fs/promises'
 import path from 'path'
 
 // Worker runs from /worker, so root uploads dir is '../uploads'
 const UPLOADS_DIR = path.resolve(process.cwd(), '../uploads')
 
-export default async function resumeProcessor(job: Job) {
+export default async function resumeProcessor(job: Job<ResumeJobData>) {
   const { resumeId } = job.data
 
   console.log(`[Resume Worker] Processing resume: ${resumeId}`)
