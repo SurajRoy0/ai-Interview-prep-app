@@ -1,0 +1,432 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum UserRole {
+  CANDIDATE
+  RECRUITER
+  ADMIN
+}
+
+enum Ecosystem {
+  JAVASCRIPT
+  PYTHON
+  JAVA
+  GO
+  OTHER
+}
+
+enum ExperienceLevel {
+  FRESHER    // 0 years
+  JUNIOR     // 0–2 years
+  MID        // 2–5 years
+  SENIOR     // 5+ years
+}
+
+enum InterviewStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum InterviewType {
+  FREE
+  PAID
+  PREMIUM
+}
+
+enum QuestionType {
+  HR
+  RESUME_BASED
+  TECHNICAL_CONCEPTUAL
+  OUTPUT_PREDICTION
+  DEBUGGING
+  ARCHITECTURE
+  COMMUNICATION
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+enum ConfidenceLevel {
+  WEAK
+  IMPROVING
+  STRONG
+}
+
+enum VisibilityStatus {
+  PRIVATE
+  PUBLIC
+  RECRUITER_VISIBLE
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+// ─────────────────────────────────────────
+// USER
+// Why: Core identity. Holds role, ecosystem detection, visibility prefs.
+// ─────────────────────────────────────────
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String?
+  image            String?
+  passwordHash     String?
+  role             UserRole          @default(CANDIDATE)
+  ecosystem        Ecosystem?
+  experienceLevel  ExperienceLevel?
+  targetRole       String?
+  isActive         Boolean           @default(true)
+  emailVerified    Boolean           @default(false)
+  visibilityStatus VisibilityStatus  @default(PRIVATE)
+  freeInterviewUsed Boolean          @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  resumes          Resume[]
+  interviews       Interview[]
+  skillScores      SkillScore[]
+  subscriptions    Subscription[]
+  payments         Payment[]
+  credits          InterviewCredit[]
+  sessions         Session[]
+  accounts         Account[]
+  auditLogs        AuditLog[]
+  recruiterProfile RecruiterProfile?
+
+  @@index([email])
+  @@index([role])
+  @@index([ecosystem])
+}
+
+// ─────────────────────────────────────────
+// BETTER AUTH — SESSION / ACCOUNT
+// Why: Better Auth requires these tables.
+// ─────────────────────────────────────────
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([token])
+  @@map("AuthSession")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId         String
+  providerId        String
+  accessToken       String?
+  refreshToken      String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope             String?
+  idToken           String?
+  password          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// ─────────────────────────────────────────
+// RESUME
+// Why: Stores parsed resume per version. Old interviews link to old resume version.
+// ─────────────────────────────────────────
+
+model Resume {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String?
+  fileKey     String?    // storage key (disk path or R2 key)
+  fileUrl     String?    // signed or local URL
+  rawText     String
+  parsedData  Json       // ResumedParsedData struct (see section 9)
+  atsScore    Int?
+  atsFeedback Json?      // ATSFeedback struct
+  ecosystem   Ecosystem?
+  version     Int        @default(1)
+  isActive    Boolean    @default(true)
+  parseStatus JobStatus  @default(PENDING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  interviews  Interview[]
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([parseStatus])
+}
+
+// ─────────────────────────────────────────
+// INTERVIEW
+// Why: Core entity. Tracks full lifecycle, scores, report.
+// ─────────────────────────────────────────
+
+model Interview {
+  id                 String          @id @default(cuid())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId           String?
+  resume             Resume?         @relation(fields: [resumeId], references: [id])
+  type               InterviewType
+  status             InterviewStatus @default(PENDING)
+  title              String?
+  totalQuestions     Int             @default(8)
+  currentTurnIndex   Int             @default(0)
+  overallScore       Int?
+  communicationScore Int?
+  technicalScore     Int?
+  confidenceScore    Int?
+  weakTopics         String[]
+  report             Json?           // InterviewReport struct
+  reportStatus       JobStatus       @default(PENDING)
+  durationSeconds    Int?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  turns              InterviewTurn[]
+  skillScores        SkillScore[]
+  analytics          InterviewAnalytics?
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────
+// INTERVIEW TURN
+// Why: Every question-answer pair stored individually for fine-tuning + recruiter view.
+// ─────────────────────────────────────────
+
+model InterviewTurn {
+  id           String       @id @default(cuid())
+  interviewId  String
+  interview    Interview    @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  turnIndex    Int
+  role         String       // 'ai' | 'candidate'
+  questionType QuestionType?
+  question     String?
+  answer       String?
+  audioKey     String?      // storage key for audio blob
+  turnScore    Int?         // 0–100 score for this specific answer
+  tokenUsage   Int?
+  latencyMs    Int?
+  createdAt    DateTime     @default(now())
+
+  @@index([interviewId])
+  @@index([interviewId, turnIndex])
+}
+
+// ─────────────────────────────────────────
+// SKILL SCORE
+// Why: Topic-level data stored from day 1 even if only shown in Phase 2.
+// ─────────────────────────────────────────
+
+model SkillScore {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interviewId String
+  interview   Interview      @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  topic       String         // 'react' | 'async-js' | 'node' | 'db-design' | etc.
+  score       Int            // 0–100
+  confidence  ConfidenceLevel
+  createdAt   DateTime       @default(now())
+
+  @@index([userId])
+  @@index([userId, topic])
+  @@index([interviewId])
+  @@index([topic])
+}
+
+// ─────────────────────────────────────────
+// INTERVIEW ANALYTICS
+// Why: Aggregated metrics per interview for admin and future ML.
+// ─────────────────────────────────────────
+
+model InterviewAnalytics {
+  id                  String    @id @default(cuid())
+  interviewId         String    @unique
+  interview           Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  avgLatencyMs        Int?
+  totalTokens         Int?
+  totalCostPaise      Int?      // stored in paise (1/100 rupee) for precision
+  abandonedAtTurn     Int?
+  completionRate      Float?
+  createdAt           DateTime  @default(now())
+}
+
+// ─────────────────────────────────────────
+// INTERVIEW CREDITS
+// Why: Track free/purchased interview units separate from subscriptions.
+// ─────────────────────────────────────────
+
+model InterviewCredit {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credits   Int       @default(0)
+  reason    String?   // 'signup_free' | 'purchase' | 'refund' | 'admin_grant'
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────
+// PAYMENT
+// Why: Every Razorpay transaction.
+// ─────────────────────────────────────────
+
+model Payment {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountPaise       Int           // in paise
+  currency          String        @default("INR")
+  provider          String        @default("razorpay")
+  providerOrderId   String?
+  providerPaymentId String?
+  providerSignature String?
+  status            PaymentStatus
+  planName          String?
+  creditsGranted    Int?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([providerPaymentId])
+}
+
+// ─────────────────────────────────────────
+// SUBSCRIPTION
+// Why: Monthly/annual plan tracking.
+// ─────────────────────────────────────────
+
+model Subscription {
+  id             String             @id @default(cuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planName       String             // 'basic' | 'pro' | 'js_prep'
+  status         SubscriptionStatus
+  interviewsLeft Int                @default(0)
+  startsAt       DateTime
+  endsAt         DateTime
+  provider       String             @default("razorpay")
+  providerSubId  String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+}
+
+// ─────────────────────────────────────────
+// AUDIT LOG
+// Why: Security, debugging, admin review.
+// ─────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────
+// FEATURE FLAG
+// Why: Controlled rollout without deploy.
+// ─────────────────────────────────────────
+
+model FeatureFlag {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  enabled   Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// RECRUITER PROFILE (Phase 5 stub)
+// Why: Schema exists now. Populated in Phase 5.
+// ─────────────────────────────────────────
+
+model RecruiterProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String?
+  designation String?
+  website     String?
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
