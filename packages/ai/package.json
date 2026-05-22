@@ -7,8 +7,12 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@repo/shared": "workspace:*",
     "@google/generative-ai": "^0.24.1",
-    "openai": "^6.38.0"
+    "@repo/shared": "workspace:*",
+    "openai": "^6.38.0",
+    "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "@types/pdf-parse": "^1.1.5"
   }
 }

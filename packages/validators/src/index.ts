@@ -1,5 +1,2 @@
-export type { ZodSchema } from 'zod'
-export * from './auth'
-export * from './interview'
-export * from './resume'
-export * from './payment'
+export * from './resume.js'
+export * from './interview.js'

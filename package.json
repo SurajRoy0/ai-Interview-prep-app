@@ -16,15 +16,17 @@
     "worker:dev": "pnpm --filter @repo/worker dev"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@repo/ai": "workspace:*",
     "@repo/audio": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/shared": "workspace:*",
     "@repo/validators": "workspace:*",
-    "@hookform/resolvers": "^5.2.2",
+    "ably": "^2.21.0",
     "better-auth": "^1.6.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "file-type": "^22.0.1",
     "framer-motion": "^12.40.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.16.0",

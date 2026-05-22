@@ -90,21 +90,21 @@ enum JobStatus {
 }
 
 enum ActivityType {
-  DEBUGGING // Show broken code, candidate finds bug
-  CODE_CORRECTION // Show broken code, candidate fixes in editor
-  OUTPUT_PREDICTION // Show code, candidate predicts output
-  RESUME_DEFENCE // Defend a specific resume claim
-  PRIORITISATION // Rank/order scenarios
-  COMMUNICATION // Explain concept simply
-  SYSTEM_DESIGN_MINI // Quick architecture question with diagram prompt
+  DEBUGGING
+  CODE_CORRECTION
+  OUTPUT_PREDICTION
+  RESUME_DEFENCE
+  PRIORITISATION
+  COMMUNICATION
+  SYSTEM_DESIGN_MINI
 }
 
 enum InputMode {
-  VOICE // Candidate speaks only
-  TEXT // Textarea opens
-  CODE_EDITOR // Monaco editor opens
-  VOICE_AND_CODE // Both voice + editor active simultaneously
-  VOICE_AND_TEXT // Both voice + textarea active simultaneously
+  VOICE
+  TEXT
+  CODE_EDITOR
+  VOICE_AND_CODE
+  VOICE_AND_TEXT
 }
 
 enum QuestionCategory {
@@ -136,25 +136,11 @@ enum PsychologicalIntent {
   REFLECTION_TRIGGER
 }
 
-enum ReportStatus {
-  PENDING
-  GENERATING
-  DONE
-  FAILED
-}
-
-enum ATSReportStatus {
-  PENDING
-  GENERATING
-  DONE
-  FAILED
-}
-
 enum ImprovementPriority {
-  CRITICAL // Fix before next interview
-  HIGH // Important for role target
-  MEDIUM // Good to address
-  LOW // Nice to have
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
 }
 
 // ======================================================
@@ -184,6 +170,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   resumes       Resume[]
+  jobProfiles   JobProfile[]
   interviews    Interview[]
   skillScores   SkillScore[]
   subscriptions Subscription[]
@@ -208,20 +195,14 @@ model User {
 
 model Session {
   id String @id @default(cuid())
-
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   token String @unique
-
   expiresAt DateTime
-
   ipAddress String?
   userAgent String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   @@index([userId])
   @@index([token])
   @@map("AuthSession")
@@ -229,43 +210,63 @@ model Session {
 
 model Account {
   id String @id @default(cuid())
-
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   accountId  String
   providerId String
-
   accessToken  String?
   refreshToken String?
-
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-
   scope   String?
   idToken String?
-
   password String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   @@unique([providerId, accountId])
   @@index([userId])
 }
 
 model Verification {
   id String @id @default(cuid())
-
   identifier String
   value      String
-
   expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+}
+
+// ======================================================
+// JOB PROFILE (NEW)
+// ======================================================
+
+model JobProfile {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String 
+  
+  targetRole String
+  experienceLevel ExperienceLevel
+  ecosystem Ecosystem?
+
+  resumeId String? 
+  resume Resume? @relation(fields: [resumeId], references: [id])
+
+  isActive Boolean @default(true)
+
+  atsReport ATSReport?
+  interviews Interview[]
+  improvementCourses ImprovementCourse[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([identifier])
+  @@index([userId])
+  @@index([targetRole])
 }
 
 // ======================================================
@@ -296,16 +297,11 @@ model Resume {
 
   parseStatus JobStatus @default(PENDING)
 
-  // legacy compatibility
-  atsScore    Int?
-  atsFeedback Json?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  interviews Interview[]
-
-  atsReport ATSReport?
+  jobProfiles JobProfile[]
+  atsReports  ATSReport[]
 
   @@index([userId])
   @@index([userId, isActive])
@@ -319,7 +315,10 @@ model Resume {
 model ATSReport {
   id String @id @default(cuid())
 
-  resumeId String @unique
+  jobProfileId String @unique
+  jobProfile   JobProfile @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
+
+  resumeId String
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   userId String
@@ -363,8 +362,8 @@ model Interview {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  resumeId String?
-  resume   Resume? @relation(fields: [resumeId], references: [id])
+  jobProfileId String
+  jobProfile   JobProfile @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
 
   type InterviewType
 
@@ -372,35 +371,26 @@ model Interview {
 
   title String?
 
-  targetRole      String?
-  experienceLevel ExperienceLevel?
-
   interviewMode String?
-
   interviewPlan Json?
-
   planGenerated Boolean @default(false)
 
   totalQuestions Int @default(8)
-
   currentTurnIndex Int @default(0)
 
   activitiesCompleted Int @default(0)
   activitiesPlanned   Int @default(0)
 
   overallScore Int?
-
   communicationScore Int?
   technicalScore     Int?
   confidenceScore    Int?
-
   authenticityScore Int?
 
   weakTopics   String[]
   strongTopics String[]
 
   report Json?
-
   reportStatus JobStatus @default(PENDING)
 
   ablyChannelId String?
@@ -414,21 +404,39 @@ model Interview {
   updatedAt DateTime @updatedAt
 
   turns InterviewTurn[]
-
   activities InterviewActivity[]
-
   skillScores SkillScore[]
-
   analytics InterviewAnalytics?
-
   reportModel InterviewReport?
-
   suggestions ImprovementSuggestion[]
 
   @@index([userId])
   @@index([status])
-  @@index([userId, status])
-  @@index([createdAt])
+  @@index([jobProfileId])
+}
+
+// ======================================================
+// IMPROVEMENT COURSE (NEW)
+// ======================================================
+
+model ImprovementCourse {
+  id String @id @default(cuid())
+
+  jobProfileId String
+  jobProfile   JobProfile @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
+
+  topic String 
+  progressPercent Int @default(0) 
+
+  isCompleted Boolean @default(false)
+
+  suggestions ImprovementSuggestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([jobProfileId, topic])
+  @@index([jobProfileId])
 }
 
 // ======================================================
@@ -437,57 +445,33 @@ model Interview {
 
 model InterviewTurn {
   id String @id @default(cuid())
-
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-
   turnIndex Int
-
   role String
-
   questionType QuestionType?
-
   questionCategory QuestionCategory?
-
   questionDifficulty QuestionDifficulty?
-
   psychologicalIntent PsychologicalIntent?
-
   targetSkills String[]
-
   question String? @db.Text
   answer   String? @db.Text
-
   inputMode InputMode?
-
   codeSnippetShown  String? @db.Text
   codeEditorContent String? @db.Text
-
   audioKey String?
-
   silenceDurationMs Int?
-
   hesitationDetected Boolean @default(false)
-
   speechDurationMs Int?
-
   isFollowUp Boolean @default(false)
-
   followUpReason String?
-
   turnScore Int?
-
   topicScored String?
-
   topicConfidence ConfidenceLevel?
-
   tokenUsage Int?
   latencyMs  Int?
-
   createdAt DateTime @default(now())
-
   @@index([interviewId])
-  @@index([interviewId, turnIndex])
 }
 
 // ======================================================
@@ -496,42 +480,26 @@ model InterviewTurn {
 
 model InterviewActivity {
   id String @id @default(cuid())
-
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-
   activityIndex Int
-
   type ActivityType
-
   title String?
-
   prompt String @db.Text
-
   codeSnippet String? @db.Text
-
   expectedAnswer String? @db.Text
-
   candidateVoiceAnswer String? @db.Text
   candidateCodeAnswer  String? @db.Text
   candidateTextAnswer  String? @db.Text
-
   score Int?
-
   evaluation Json?
-
   skillsEvaluated String[]
-
   startedAt   DateTime?
   completedAt DateTime?
-
   skipped Boolean @default(false)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   @@index([interviewId])
-  @@index([interviewId, activityIndex])
 }
 
 // ======================================================
@@ -540,47 +508,29 @@ model InterviewActivity {
 
 model InterviewReport {
   id String @id @default(cuid())
-
   interviewId String    @unique
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-
   userId String
-
   overallScore Int
-
   communicationScore Int
   technicalScore     Int
   confidenceScore    Int
-
   authenticityScore Int?
-
   performanceSummary String @db.Text
-
   readinessLevel String
-
   readinessSummary String @db.Text
-
   topStrengths String[]
-
   weakTopics  Json
   topicScores Json
-
   activitySummary Json?
-
   communicationAnalysis Json
   confidenceAnalysis    Json
   authenticityAnalysis  Json?
-
   isJsEcosystem Boolean @default(false)
-
   upsellEligible Boolean @default(false)
-
   generatedAt DateTime @default(now())
-
   createdAt DateTime @default(now())
-
   @@index([userId])
-  @@index([interviewId])
 }
 
 // ======================================================
@@ -589,34 +539,25 @@ model InterviewReport {
 
 model ImprovementSuggestion {
   id String @id @default(cuid())
-
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-
   userId String
-
   topic String
-
   priority ImprovementPriority
-
   title String
-
   description String @db.Text
-
   specificAction String @db.Text
-
   resourceHint String?
-
   relatedTurnIds String[]
-
   dismissed Boolean @default(false)
+  
+  courseId String?
+  course   ImprovementCourse? @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
-
   @@index([userId])
   @@index([interviewId])
   @@index([topic])
-  @@index([priority])
 }
 
 // ======================================================
@@ -625,30 +566,19 @@ model ImprovementSuggestion {
 
 model SkillScore {
   id String @id @default(cuid())
-
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-
   topic String
-
   score Int
-
   previousScore Int?
   delta         Int?
-
   confidence ConfidenceLevel
-
   evidenceTurnIds String[]
-
   createdAt DateTime @default(now())
-
   @@index([userId])
-  @@index([userId, topic])
   @@index([interviewId])
-  @@index([topic])
 }
 
 // ======================================================
@@ -657,35 +587,22 @@ model SkillScore {
 
 model InterviewAnalytics {
   id String @id @default(cuid())
-
   interviewId String    @unique
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-
   totalTokens Int?
-
   totalCostPaise Int?
-
   avgLatencyMs Int?
-
   avgAiLatencyMs  Int?
   avgSttLatencyMs Int?
   avgTtsLatencyMs Int?
-
   totalSpeakingSeconds Int?
   totalSilenceSeconds  Int?
-
   interruptionCount Int?
-
   hesitationCount Int?
-
   avgAnswerDurationMs Int?
-
   abandonedAtTurn Int?
-
   completionRate Float?
-
   activitiesCompleted Int?
-
   createdAt DateTime @default(now())
 }
 
@@ -695,18 +612,12 @@ model InterviewAnalytics {
 
 model InterviewCredit {
   id String @id @default(cuid())
-
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   credits Int @default(0)
-
   reason String?
-
   expiresAt DateTime?
-
   createdAt DateTime @default(now())
-
   @@index([userId])
 }
 
@@ -716,34 +627,21 @@ model InterviewCredit {
 
 model Payment {
   id String @id @default(cuid())
-
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   amountPaise Int
-
   currency String @default("INR")
-
   provider String @default("razorpay")
-
   providerOrderId   String?
   providerPaymentId String?
   providerSignature String?
-
   status PaymentStatus
-
   planName String?
-
   creditsGranted Int?
-
   metadata Json?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   @@index([userId])
-  @@index([status])
-  @@index([providerPaymentId])
 }
 
 // ======================================================
@@ -752,29 +650,18 @@ model Payment {
 
 model Subscription {
   id String @id @default(cuid())
-
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   planName String
-
   status SubscriptionStatus
-
   interviewsLeft Int @default(0)
-
   startsAt DateTime
   endsAt   DateTime
-
   provider String @default("razorpay")
-
   providerSubId String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   @@index([userId])
-  @@index([status])
-  @@index([userId, status])
 }
 
 // ======================================================
@@ -783,24 +670,15 @@ model Subscription {
 
 model AuditLog {
   id String @id @default(cuid())
-
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
-
   action String
-
   entity   String?
   entityId String?
-
   metadata Json?
-
   ipAddress String?
-
   createdAt DateTime @default(now())
-
   @@index([userId])
-  @@index([action])
-  @@index([createdAt])
 }
 
 // ======================================================
@@ -809,13 +687,9 @@ model AuditLog {
 
 model FeatureFlag {
   id String @id @default(cuid())
-
   key String @unique
-
   enabled Boolean @default(false)
-
   metadata Json?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -826,16 +700,12 @@ model FeatureFlag {
 
 model RecruiterProfile {
   id String @id @default(cuid())
-
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   companyName String?
   designation String?
   website     String?
-
   isVerified Boolean @default(false)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

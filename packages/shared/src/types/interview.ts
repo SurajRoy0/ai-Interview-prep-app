@@ -1,3 +1,22 @@
-// Interview domain types — extend as the interview module is implemented.
+export interface InterviewPlanItem {
+  type: string
+  topic: string
+  targetSkills: string[]
+  difficulty: string
+  psychologicalIntent: string
+}
 
-export type InterviewMode = 'voice' | 'text' | 'hybrid'
+export interface InterviewPlan {
+  estimatedDurationMins: number
+  activities: InterviewPlanItem[]
+}
+
+export interface InterviewTurnData {
+  turnIndex: number
+  role: 'AI' | 'CANDIDATE'
+  question?: string
+  answer?: string
+  codeSnippetShown?: string
+  codeEditorContent?: string
+  turnScore?: number
+}

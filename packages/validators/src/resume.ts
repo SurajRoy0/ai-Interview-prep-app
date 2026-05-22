@@ -1,24 +1,31 @@
 import { z } from 'zod'
 
-export const ALLOWED_RESUME_MIME_TYPES = [
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-] as const
-
-export const MAX_RESUME_BYTES = 5 * 1024 * 1024
-
 export const resumeUploadSchema = z.object({
-  title: z.string().optional(),
+  targetRole: z.string().min(2, "Target role is required"),
 })
 
-export type ResumeUploadInput = z.infer<typeof resumeUploadSchema>
-
-export function validateResumeFile(file: { type: string; size: number }) {
-  if (!ALLOWED_RESUME_MIME_TYPES.includes(file.type as (typeof ALLOWED_RESUME_MIME_TYPES)[number])) {
-    return { ok: false as const, error: 'INVALID_FILE_TYPE' as const }
-  }
-  if (file.size > MAX_RESUME_BYTES) {
-    return { ok: false as const, error: 'FILE_TOO_LARGE' as const }
-  }
-  return { ok: true as const }
-}
+// Ensures the AI's JSON output matches our ParsedResumeData interface exactly
+export const parsedResumeSchema = z.object({
+  skills: z.object({
+    frontend: z.array(z.string()),
+    backend: z.array(z.string()),
+    database: z.array(z.string()),
+    tools: z.array(z.string()),
+  }),
+  experience: z.array(z.object({
+    company: z.string(),
+    role: z.string(),
+    duration: z.string(),
+    highlights: z.array(z.string()),
+  })),
+  projects: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    technologies: z.array(z.string()),
+  })),
+  education: z.array(z.object({
+    degree: z.string(),
+    institution: z.string(),
+    year: z.string(),
+  })),
+})
