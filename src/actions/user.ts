@@ -18,11 +18,10 @@ export async function getDashboardProfile() {
       _count: {
         select: {
           interviews: true,
-          resumes: { where: { isActive: true } },
         },
       },
     },
   })
-  
+
   return user
 }

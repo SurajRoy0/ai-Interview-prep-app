@@ -52,14 +52,6 @@ const createAuth = () => betterAuth({
         type: 'string',
         defaultValue: 'CANDIDATE',
       },
-      ecosystem: {
-        type: 'string',
-        required: false,
-      },
-      experienceLevel: {
-        type: 'string',
-        required: false,
-      },
     },
   },
   plugins: [
