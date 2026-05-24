@@ -1,14 +1,15 @@
 "use client"
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type ConfirmationVariant = "alert" | "confirm"
 
@@ -40,39 +41,35 @@ export function ConfirmationDialog({
   const isAlert = variant === "alert"
   const resolvedConfirmLabel = confirmLabel ?? (isAlert ? "OK" : "Confirm")
 
-  async function handleConfirm() {
+  async function handleConfirm(e: React.MouseEvent) {
+    e.preventDefault()
+    if (loading) return
     await onConfirm?.()
     onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={!isAlert}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
-        </DialogHeader>
-        <DialogFooter showCloseButton={false}>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          {description ? <AlertDialogDescription>{description}</AlertDialogDescription> : null}
+        </AlertDialogHeader>
+        <AlertDialogFooter>
           {!isAlert ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
+            <AlertDialogCancel disabled={loading}>
               {cancelLabel}
-            </Button>
+            </AlertDialogCancel>
           ) : null}
-          <Button
-            type="button"
-            variant={destructive ? "destructive" : "default"}
+          <AlertDialogAction
             onClick={handleConfirm}
             disabled={loading}
+            className={destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
           >
             {loading ? "Please wait…" : resolvedConfirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
