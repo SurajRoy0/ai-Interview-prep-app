@@ -23,5 +23,19 @@ export async function getDashboardProfile() {
     },
   })
 
-  return user
+  const resumeCount = await prisma.resume.count({
+    where: {
+      jobProfile: {
+        userId: session.user.id
+      }
+    }
+  })
+
+  return {
+    ...user,
+    _count: {
+      ...user._count,
+      resumes: resumeCount
+    }
+  }
 }
