@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft, Briefcase, Calendar, CheckCircle2, FileText, Activity } from 'lucide-react'
 import { ResumeUploader } from '@/components/resume/resume-uploader'
 import { ResumeCard } from '@/components/resume/resume-card'
+import { ClientRefreshPoller } from '@/components/resume/client-refresh-poller'
 
 export default async function JobProfileDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,6 +19,8 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
 
   // Sort resumes by version descending just in case createdAt was somehow out of order
   const sortedResumes = [...profile.resumes].sort((a, b) => b.version - a.version)
+  
+  const isProcessing = sortedResumes.some(r => r.parseStatus === 'PENDING' || r.parseStatus === 'PROCESSING')
 
   // Map to find which resumes have been used in interviews
   const resumeIdToInterviewCount = new Map<string, number>()
@@ -28,6 +31,7 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+      <ClientRefreshPoller isProcessing={isProcessing} />
       
       {/* Header */}
       <div className="flex items-center gap-4 border-b border-border pb-6">
@@ -59,7 +63,7 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
 
             {/* Uploader is always visible so user can add new versions */}
             <div className="mb-8">
-              <ResumeUploader jobProfileId={profile.id} />
+              <ResumeUploader jobProfileId={profile.id} isServerProcessing={isProcessing} />
             </div>
 
             {/* Resume History */}

@@ -2,10 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { uploadResumeAction, getResumeStatusAction } from '@/actions/resume'
+import { uploadResumeAction } from '@/actions/resume'
 import { toast } from 'sonner'
-import { UploadCloud, FileText, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { UploadCloud, FileText, Loader2, AlertCircle } from 'lucide-react'
 
 const LOADING_MESSAGES = [
   "Reading your resume like a recruiter on 2 coffees ☕",
@@ -15,17 +14,24 @@ const LOADING_MESSAGES = [
   "Converting resume chaos into structured intelligence ✨"
 ]
 
-export function ResumeUploader({ jobProfileId }: { jobProfileId: string }) {
-  const router = useRouter()
+export function ResumeUploader({ jobProfileId, isServerProcessing }: { jobProfileId: string, isServerProcessing?: boolean }) {
   const [file, setFile] = useState<File | null>(null)
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'failed'>('idle')
-  const [resumeId, setResumeId] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [messageIndex, setMessageIndex] = useState(0)
+
+  // Clear internal states if server finished processing
+  useEffect(() => {
+    if (!isServerProcessing) {
+      setIsUploading(false)
+      setFile(null)
+    }
+  }, [isServerProcessing])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0])
-      setStatus('idle')
+      setUploadError(null)
     }
   }, [])
 
@@ -42,7 +48,8 @@ export function ResumeUploader({ jobProfileId }: { jobProfileId: string }) {
   const handleUpload = async () => {
     if (!file) return
 
-    setStatus('uploading')
+    setIsUploading(true)
+    setUploadError(null)
     const formData = new FormData()
     formData.append('file', file)
     formData.append('jobProfileId', jobProfileId)
@@ -51,84 +58,38 @@ export function ResumeUploader({ jobProfileId }: { jobProfileId: string }) {
       const result = await uploadResumeAction(formData)
       
       if (result.success) {
-        setResumeId(result.data.resumeId)
-        setStatus('processing')
         toast.success('Resume uploaded! AI is analyzing it now.')
       } else {
-        setStatus('failed')
-        toast.error(result.error?.message || 'Upload failed')
+        setUploadError(result.error?.message || 'Upload failed')
+        setIsUploading(false)
         setFile(null)
       }
     } catch (e) {
       console.error(e)
-      setStatus('failed')
-      toast.error('A network or server error occurred')
+      setUploadError('A network or server error occurred')
+      setIsUploading(false)
       setFile(null)
     }
   }
 
   // Rotating loading messages
   useEffect(() => {
-    if (status !== 'processing') return
+    if (!isServerProcessing) return
     const messageInterval = setInterval(() => {
       setMessageIndex(prev => (prev + 1) % LOADING_MESSAGES.length)
     }, 2500)
     return () => clearInterval(messageInterval)
-  }, [status])
+  }, [isServerProcessing])
 
-  // Polling logic
-  useEffect(() => {
-    if (status !== 'processing' || !resumeId) return
-
-    const pollInterval = setInterval(async () => {
-      const result = await getResumeStatusAction(resumeId)
-      if (result.success) {
-        if (result.data.status === 'DONE') {
-          setStatus('done')
-          toast.success('Resume parsing complete!')
-          router.refresh()
-          clearInterval(pollInterval)
-          
-          // Reset after a short delay so user can upload another if they want
-          setTimeout(() => {
-            setStatus('idle')
-            setFile(null)
-            setResumeId(null)
-          }, 3000)
-
-        } else if (result.data.status === 'FAILED') {
-          setStatus('failed')
-          toast.error(result.data.parseError || 'AI failed to parse the resume.')
-          router.refresh()
-          clearInterval(pollInterval)
-        }
-      }
-    }, 2000)
-
-    return () => clearInterval(pollInterval)
-  }, [status, resumeId, router])
-
-  if (status === 'done') {
-    return (
-      <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-3 animate-in zoom-in duration-500">
-        <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-          <CheckCircle2 className="w-8 h-8 text-green-500" />
-        </div>
-        <h3 className="text-xl font-bold text-foreground">Parsing Complete</h3>
-        <p className="text-muted-foreground text-sm max-w-sm">Your resume has been added and set as active.</p>
-      </div>
-    )
-  }
-
-  if (status === 'uploading' || status === 'processing') {
+  if (isUploading || isServerProcessing) {
     return (
       <div className="bg-card border border-border rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
         <h3 className="text-xl font-bold text-foreground">
-          {status === 'uploading' ? 'Uploading Document...' : 'AI is Parsing Resume...'}
+          {isUploading && !isServerProcessing ? 'Uploading Document...' : 'AI is Parsing Resume...'}
         </h3>
         <p className="text-muted-foreground text-sm font-medium animate-pulse min-h-[40px]">
-          {status === 'uploading' 
+          {isUploading && !isServerProcessing 
             ? 'Sending your file securely to our servers.'
             : LOADING_MESSAGES[messageIndex]}
         </p>
@@ -138,10 +99,10 @@ export function ResumeUploader({ jobProfileId }: { jobProfileId: string }) {
 
   return (
     <div className="space-y-4">
-      {status === 'failed' && (
+      {uploadError && (
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl flex items-center gap-3">
           <AlertCircle className="w-5 h-5" />
-          <span className="text-sm font-medium">Failed to process resume. Please try uploading again.</span>
+          <span className="text-sm font-medium">{uploadError}</span>
         </div>
       )}
 
@@ -173,7 +134,7 @@ export function ResumeUploader({ jobProfileId }: { jobProfileId: string }) {
           </div>
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => { setFile(null); setStatus('idle'); }}
+              onClick={() => { setFile(null); setUploadError(null); }}
               className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Cancel
