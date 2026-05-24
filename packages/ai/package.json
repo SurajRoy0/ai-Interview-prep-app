@@ -7,8 +7,9 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@repo/shared": "workspace:*",
+    "@ai-sdk/google": "^3.0.79",
     "@google/generative-ai": "^0.24.1",
+    "@repo/shared": "workspace:*",
     "openai": "^6.38.0"
   }
 }

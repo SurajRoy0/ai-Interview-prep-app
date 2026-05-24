@@ -3,7 +3,7 @@ export default function ResumeUploadPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Upload Resume</h1>
-        <p className="text-muted-foreground">Upload your resume to get an ATS score and start interviewing.</p>
+        <p className="text-muted-foreground">Upload your resume to start interviewing.</p>
       </div>
       
       <div className="rounded-xl border border-dashed border-border bg-card text-card-foreground p-12 text-center">

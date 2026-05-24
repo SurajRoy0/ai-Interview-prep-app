@@ -267,7 +267,7 @@ export function HomePage({ session }: HomePageProps) {
                 </div>
                 <p className="mt-4 text-muted-foreground">Perfect to test our AI interviewer engine.</p>
                 <ul className="mt-8 space-y-4 flex-1">
-                  {['1 full personalized interview', 'ATS Resume Score', 'Top 3 Weaknesses Report', 'Ecosystem Detection'].map((item, i) => (
+                  {['1 full personalized interview', 'Top 3 Weaknesses Report', 'Ecosystem Detection'].map((item, i) => (
                     <li key={i} className="flex items-center gap-3">
                       <svg className="h-5 w-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

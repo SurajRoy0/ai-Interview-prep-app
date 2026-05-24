@@ -1,9 +1,12 @@
 import Link from "next/link"
 import { getDashboardProfile } from "@/actions/user"
-import { ArrowRight, FileText, CheckCircle2, CircleDashed, Mic, Activity, Clock, Zap } from "lucide-react"
+import { getJobProfilesAction } from "@/actions/job-profile"
+import { ArrowRight, FileText, CheckCircle2, CircleDashed, Mic, Activity, Clock, Zap, Plus, Briefcase } from "lucide-react"
 
 export default async function DashboardPage() {
   const user = await getDashboardProfile()
+  const profiles = await getJobProfilesAction()
+
   const name = user.name?.split(" ")[0] ?? "there"
   const interviewCount = user._count.interviews
   const resumeCount = user._count.resumes
@@ -61,75 +64,65 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent Activity Section */}
+      {/* Job Profiles Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            Recent Activity
+            <Briefcase className="w-5 h-5 text-primary" />
+            Your Job Profiles
           </h2>
-          <Link href="/dashboard" className="text-sm text-primary hover:opacity-80 font-medium">
-            View all
+          <Link href="/profile/create" className="text-sm bg-secondary text-secondary-foreground px-4 py-2 rounded-full hover:opacity-80 font-bold transition-opacity flex items-center gap-2 border border-border">
+            <Plus className="w-4 h-4" /> Create Profile
           </Link>
         </div>
 
         <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
-          {/* List Items */}
           <div className="divide-y divide-border">
 
-            {/* Mock Item 1 */}
-            <div className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 hover:bg-muted/50 transition-colors">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 flex-shrink-0">
-                  <Mic className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">Frontend Engineer @ Google</h3>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                    <span className="flex items-center gap-1.5"><CircleDashed className="w-4 h-4 text-blue-500" /> In Progress</span>
-                    <span className="w-1 h-1 rounded-full bg-border" />
-                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> Started today</span>
-                  </div>
-                </div>
-              </div>
-              <Link href="/dashboard" className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-colors border border-border">
-                Resume
-              </Link>
-            </div>
-
-            {/* Mock Item 2 */}
-            <div className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 hover:bg-muted/50 transition-colors">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center border border-border flex-shrink-0">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">Senior React Developer</h3>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                    <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-500" /> Parsed & Ready</span>
-                    <span className="w-1 h-1 rounded-full bg-border" />
-                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> Uploaded Oct 24</span>
-                  </div>
-                </div>
-              </div>
-              <Link href="/dashboard" className="px-4 py-2 rounded-full bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-colors border border-border">
-                View Report
-              </Link>
-            </div>
-
-            {/* Empty State */}
-            {interviewCount === 0 && resumeCount === 0 && (
+            {profiles.length === 0 ? (
               <div className="p-12 text-center flex flex-col items-center justify-center bg-muted/10">
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <FileText className="w-8 h-8 text-muted-foreground" />
+                  <Briefcase className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">No activity yet</h3>
-                <p className="text-muted-foreground max-w-sm mb-6">Upload your resume to get started. We'll automatically generate mock interviews based on your profile.</p>
-                <Link href="/resume/upload" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all font-bold shadow-md">
-                  <FileText className="h-4 w-4" />
-                  Upload First Resume
+                <h3 className="text-lg font-bold text-foreground mb-2">No job profiles yet</h3>
+                <p className="text-muted-foreground max-w-sm mb-6">Create a job profile to upload your resume and start generating tailored interviews.</p>
+                <Link href="/profile/create" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all font-bold shadow-md">
+                  <Plus className="h-4 w-4" />
+                  Create First Profile
                 </Link>
               </div>
+            ) : (
+              profiles.map(profile => (
+                <div key={profile.id} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 hover:bg-muted/50 transition-colors cursor-pointer relative">
+                  
+                  {/* Invisible link overlay for entire row */}
+                  <Link href={`/profile/${profile.id}`} className="absolute inset-0 z-0"></Link>
+
+                  <div className="flex items-start gap-4 z-10 pointer-events-none">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 flex-shrink-0">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{profile.title}</h3>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                        <span className="flex items-center gap-1.5"><TargetIcon className="w-4 h-4" /> {profile.targetRole}</span>
+                        <span className="w-1 h-1 rounded-full bg-border" />
+                        <span className="flex items-center gap-1.5">
+                          {profile.activeResume ? (
+                            <><CheckCircle2 className="w-4 h-4 text-green-500" /> Resume active</>
+                          ) : (
+                            <><CircleDashed className="w-4 h-4 text-yellow-500" /> Needs resume</>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="z-10 flex gap-4 text-sm text-muted-foreground text-right hidden sm:block pointer-events-none">
+                     <p className="font-bold text-foreground">{profile._count.interviews}</p>
+                     <p className="text-xs uppercase tracking-wider">Interviews</p>
+                  </div>
+                </div>
+              ))
             )}
 
           </div>
@@ -137,5 +130,15 @@ export default async function DashboardPage() {
       </div>
 
     </div>
+  )
+}
+
+function TargetIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
   )
 }

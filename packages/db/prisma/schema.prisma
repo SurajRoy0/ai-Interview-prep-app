@@ -1,13 +1,3 @@
-// ======================================================
-// FOXTEL — AI Interview Platform
-// Prisma Schema v3.0 — Final MVP Schema
-// ======================================================
-// Core Philosophy:
-//   Job Profile → Resume Snapshot → Interview → Report → Improve
-//   No ATS. No SkillScore. No LMS.
-//   Credits are the currency. Report is the product.
-// ======================================================
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -156,10 +146,10 @@ enum VisibilityStatus {
 // ======================================================
 
 model User {
-  id           String  @id @default(cuid())
-  email        String  @unique
-  name         String?
-  image        String?
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+  image String?
 
   role UserRole @default(CANDIDATE)
 
@@ -327,6 +317,7 @@ model Resume {
 
   // Parsing state
   parseStatus JobStatus @default(PENDING)
+  parseError  String?
 
   // Extracted content
   rawText       String @db.Text
