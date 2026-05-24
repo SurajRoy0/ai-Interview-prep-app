@@ -122,7 +122,8 @@ export function ResumeCard({ resume, isActive, hasInterviews }: { resume: any, i
 
           {/* Parsed Data View */}
           {resume.parseStatus === 'DONE' && parsedData && (
-            <div className="space-y-6">
+            <div className="space-y-8">
+              {/* Summary */}
               {parsedData.basics && (
                 <div>
                   <h4 className="text-sm font-bold text-foreground mb-1">Summary</h4>
@@ -130,30 +131,87 @@ export function ResumeCard({ resume, isActive, hasInterviews }: { resume: any, i
                 </div>
               )}
 
-              <div className="grid sm:grid-cols-2 gap-6">
+              {/* Skills */}
+              {parsedData.skills && (
                 <div>
                   <h4 className="text-sm font-bold text-foreground mb-2">Skills</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {[...(parsedData.skills?.languages || []), ...(parsedData.skills?.frameworks || []), ...(parsedData.skills?.tools || [])].slice(0, 10).map((s: string, i: number) => (
-                      <span key={i} className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs font-medium rounded border border-border">
+                    {[...(parsedData.skills.languages || []), ...(parsedData.skills.frameworks || []), ...(parsedData.skills.tools || [])].map((s: string, i: number) => (
+                      <span key={i} className="px-2.5 py-1 bg-secondary text-secondary-foreground text-xs font-semibold rounded-md border border-border">
                         {s}
                       </span>
                     ))}
                   </div>
                 </div>
+              )}
 
-                <div>
-                  <h4 className="text-sm font-bold text-foreground mb-2">Recent Experience</h4>
-                  {parsedData.experience?.[0] ? (
-                    <div>
-                      <p className="font-semibold text-sm text-foreground">{parsedData.experience[0].role}</p>
-                      <p className="text-xs text-muted-foreground">{parsedData.experience[0].company}</p>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No experience found</p>
-                  )}
-                </div>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Experience */}
+                {parsedData.experience && parsedData.experience.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground border-b border-border pb-2">Experience</h4>
+                    {parsedData.experience.map((exp: any, i: number) => (
+                      <div key={i} className="space-y-1">
+                        <p className="font-semibold text-sm text-foreground">
+                          {exp.role} <span className="font-normal text-muted-foreground">@ {exp.company}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {exp.startDate || ''} {exp.startDate && exp.endDate ? '-' : ''} {exp.endDate || ''}
+                        </p>
+                        {exp.description && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{exp.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Projects */}
+                {parsedData.projects && parsedData.projects.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-foreground border-b border-border pb-2">Projects</h4>
+                    {parsedData.projects.map((proj: any, i: number) => (
+                      <div key={i} className="space-y-1">
+                        <p className="font-semibold text-sm text-foreground">{proj.name}</p>
+                        {proj.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{proj.description}</p>
+                        )}
+                        {proj.technologies && proj.technologies.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {proj.technologies.slice(0, 5).map((tech: string, j: number) => (
+                              <span key={j} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                                {tech}
+                              </span>
+                            ))}
+                            {proj.technologies.length > 5 && (
+                              <span className="text-[10px] text-muted-foreground font-medium px-1 py-0.5">
+                                +{proj.technologies.length - 5} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Education */}
+              {parsedData.education && parsedData.education.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-foreground border-b border-border pb-2">Education</h4>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {parsedData.education.map((edu: any, i: number) => (
+                      <div key={i}>
+                        <p className="font-semibold text-sm text-foreground">{edu.degree}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {edu.institution} {edu.year ? `(${edu.year})` : ''}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
