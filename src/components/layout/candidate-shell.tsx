@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "../shared/theme-toggle"
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
-// User journey: Dashboard → pick a Job Profile → /profile/[id] → upload resume → start interview
+// User journey: Dashboard → pick a Job Profile → /job-profiles/[id] → upload resume → start interview
 // History of all interviews lives at /interview/history
 // Billing and settings are standalone pages
 

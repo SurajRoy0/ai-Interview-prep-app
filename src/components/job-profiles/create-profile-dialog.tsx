@@ -35,9 +35,9 @@ interface Props {
 }
 
 export function CreateProfileDialog({ children }: Props) {
-  const [open, setOpen]         = useState(false)
-  const [loading, setLoading]   = useState(false)
-  const router                  = useRouter()
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } =
     useForm<FormData>({
@@ -57,7 +57,7 @@ export function CreateProfileDialog({ children }: Props) {
         setOpen(false)
         reset()
         // Navigate to the new profile page (user can upload resume there)
-        router.push(`/profile/${result.data.id}`)
+        router.push(`/job-profiles/${result.data.id}`)
       } else {
         toast.error(result.error?.message ?? "Something went wrong")
       }

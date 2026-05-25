@@ -5,7 +5,7 @@ import {
   ArrowRight, FileText, CheckCircle2, CircleDashed,
   Mic, Plus, Briefcase, Target, ChevronRight, Sparkles
 } from "lucide-react"
-import { CreateProfileDialog } from "@/components/profile/create-profile-dialog"
+import { CreateProfileDialog } from "@/components/job-profiles/create-profile-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -62,8 +62,8 @@ export default async function DashboardPage() {
 
         {/* Credits pill */}
         <div className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium ${hasCredits
-            ? "bg-green-500/8 border-green-500/25 text-green-600 dark:text-green-400"
-            : "bg-surface-1 border-border text-muted-foreground"
+          ? "bg-green-500/8 border-green-500/25 text-green-600 dark:text-green-400"
+          : "bg-surface-1 border-border text-muted-foreground"
           }`}>
           <span className={`h-2 w-2 rounded-full ${hasCredits ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-muted-foreground/40"}`} />
           {hasCredits ? "1 free session available" : "Free session used"}
@@ -166,7 +166,7 @@ export default async function DashboardPage() {
               return (
                 <Link
                   key={profile.id}
-                  href={`/profile/${profile.id}`}
+                  href={`/job-profiles/${profile.id}`}
                   className="group bg-card border border-border/50 hover:border-primary/35 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:shadow-primary/5 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between gap-3">

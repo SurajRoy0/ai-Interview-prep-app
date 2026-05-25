@@ -69,7 +69,7 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
     // Queue the background job for AI parsing
     await resumeQueue.add('parse-resume', { resumeId: resume.id })
 
-    revalidatePath(`/profile/${jobProfileId}`)
+    revalidatePath(`/job-profiles/${jobProfileId}`)
 
     return success({ resumeId: resume.id })
   } catch (error) {
@@ -117,7 +117,7 @@ export async function deleteResumeAction(resumeId: string): Promise<ActionResult
     const interviewCount = await prisma.interview.count({
       where: { resumeId }
     })
-    
+
     if (interviewCount > 0) {
       return failure('Cannot delete a resume that has been used in past interviews. Instead, upload a new version.', 'CONFLICT')
     }
@@ -142,7 +142,7 @@ export async function deleteResumeAction(resumeId: string): Promise<ActionResult
       })
     }
 
-    revalidatePath(`/profile/${jobProfileId}`)
+    revalidatePath(`/job-profiles/${jobProfileId}`)
 
     return success({ success: true })
   } catch (error) {
@@ -169,7 +169,7 @@ export async function retryResumeParseAction(resumeId: string): Promise<ActionRe
 
     await resumeQueue.add('parse-resume', { resumeId: resume.id })
 
-    revalidatePath(`/profile/${resume.jobProfileId}`)
+    revalidatePath(`/job-profiles/${resume.jobProfileId}`)
 
     return success({ success: true })
   } catch (error) {
@@ -195,7 +195,7 @@ export async function activateResumeAction(resumeId: string): Promise<ActionResu
       data: { activeResumeId: resume.id }
     })
 
-    revalidatePath(`/profile/${resume.jobProfileId}`)
+    revalidatePath(`/job-profiles/${resume.jobProfileId}`)
 
     return success({ success: true })
   } catch (error) {

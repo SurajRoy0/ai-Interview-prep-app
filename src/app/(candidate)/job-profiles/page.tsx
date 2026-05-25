@@ -3,7 +3,7 @@ import { getJobProfilesAction } from "@/actions/job-profile"
 import {
   Briefcase, Plus, Target, ChevronRight, CheckCircle2, CircleDashed
 } from "lucide-react"
-import { CreateProfileDialog } from "@/components/profile/create-profile-dialog"
+import { CreateProfileDialog } from "@/components/job-profiles/create-profile-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -96,7 +96,7 @@ export default async function JobProfilesPage({
               return (
                 <Link
                   key={profile.id}
-                  href={`/profile/${profile.id}`}
+                  href={`/job-profiles/${profile.id}`}
                   className="group bg-card border border-border/50 hover:border-primary/35 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:shadow-primary/5 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between gap-3">
