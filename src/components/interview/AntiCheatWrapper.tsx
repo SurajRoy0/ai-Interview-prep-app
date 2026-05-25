@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertCircle, Maximize } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -11,14 +11,11 @@ interface AntiCheatWrapperProps {
 export function AntiCheatWrapper({ children }: AntiCheatWrapperProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [tabSwitches, setTabSwitches] = useState(0)
-  const wrapperRef = useRef<HTMLDivElement>(null)
 
   // Fullscreen Management
   const requestFullscreen = async () => {
     try {
-      if (wrapperRef.current) {
-        await wrapperRef.current.requestFullscreen()
-      }
+      await document.documentElement.requestFullscreen()
     } catch (err) {
       console.error("Error attempting to enable fullscreen:", err)
     }
@@ -39,7 +36,6 @@ export function AntiCheatWrapper({ children }: AntiCheatWrapperProps) {
       if (document.hidden && isFullscreen) {
         setTabSwitches((prev) => {
           const newCount = prev + 1
-          // TODO: Send metric to InterviewAnalytics via server action
           console.warn(`Tab switch detected! Total infractions: ${newCount}`)
           return newCount
         })
@@ -48,6 +44,20 @@ export function AntiCheatWrapper({ children }: AntiCheatWrapperProps) {
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [isFullscreen])
+
+  // Prevent accidental refresh
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = '' // Required for Chrome
+      return ''
+    }
+    
+    if (isFullscreen) {
+      window.addEventListener('beforeunload', handleBeforeUnload)
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
   }, [isFullscreen])
 
   // Block Copy/Paste
@@ -76,15 +86,14 @@ export function AntiCheatWrapper({ children }: AntiCheatWrapperProps) {
 
   return (
     <div 
-      ref={wrapperRef} 
       className="w-full h-screen bg-background text-foreground overflow-hidden"
       onCopy={handleCopyPaste}
       onPaste={handleCopyPaste}
     >
-      {/* Optional: Show a subtle warning if they have switched tabs */}
+      {/* Persistent subtle warning if they have switched tabs */}
       {tabSwitches > 0 && (
-        <div className="absolute top-0 w-full bg-destructive/10 text-destructive text-xs py-1 text-center font-medium z-50">
-          Warning: Tab switch detected. This will be noted in your final report.
+        <div className="w-full bg-destructive text-destructive-foreground text-xs py-1.5 text-center font-medium relative z-50">
+          Warning: Tab switch detected. This infraction has been logged and will affect your evaluation.
         </div>
       )}
       

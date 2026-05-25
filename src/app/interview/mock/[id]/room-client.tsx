@@ -7,7 +7,7 @@ import { DefaultChatTransport } from 'ai'
 import { useDeepgramSTT } from '@/hooks/useDeepgramSTT'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Mic, MicOff, Send, Loader2, LogOut } from 'lucide-react'
+import { Mic, MicOff, Send, Loader2, LogOut, Code2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from 'sonner'
 import { ActivityPanel } from '@/components/interview/ActivityPanel'
@@ -26,9 +26,11 @@ import {
 
 export function InterviewRoomClient({
   interviewId,
+  interviewType,
   initialMessages,
 }: {
   interviewId: string
+  interviewType: string
   initialMessages: UIMessage[]
 }) {
   const {
@@ -44,6 +46,7 @@ export function InterviewRoomClient({
   const [input, setInput] = useState('')
   const router = useRouter()
   const [isEnding, setIsEnding] = useState(false)
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(interviewType === 'TECHNICAL' || interviewType === 'FULL')
 
   const [code, setCode] = useState('// Write your solution here...\n')
   const [language, setLanguage] = useState('javascript')
@@ -80,7 +83,7 @@ export function InterviewRoomClient({
       const res = await endInterviewAction(interviewId)
       if (res.success) {
         toast.success('Interview completed! Generating your report...')
-        router.push(`/interview/${interviewId}/report`)
+        router.push(`/dashboard`)
       } else {
         toast.error(res.error.message || 'Failed to end interview')
         setIsEnding(false)
@@ -163,6 +166,15 @@ export function InterviewRoomClient({
           <div className="text-xs text-muted-foreground font-medium bg-muted px-3 py-1.5 rounded-full hidden sm:block">
             Principal Engineer
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsWorkspaceOpen((prev) => !prev)}
+            className={`font-semibold shadow-sm gap-1.5 ${isWorkspaceOpen ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
+          >
+            <Code2 className="w-4 h-4" />
+            <span className="hidden sm:inline">{isWorkspaceOpen ? 'Hide Editor' : 'Show Editor'}</span>
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -219,7 +231,7 @@ export function InterviewRoomClient({
               )}
 
               {messages.map((m) => {
-                const text = m.parts?.map((p) => (p.type === 'text' ? p.text : '')).join('') ?? ''
+                const text = m.content || m.parts?.map((p) => (p.type === 'text' ? p.text : '')).join('') || ''
                 const isUser = m.role === 'user'
                 return (
                   <div
@@ -346,17 +358,19 @@ export function InterviewRoomClient({
         </div>
 
         {/* Right Column: Code Editor */}
-        <div className="w-[52%] hidden lg:block border-l border-border/40">
-          <ActivityPanel
-            code={code}
-            onChange={(val) => setCode(val || '')}
-            language={language}
-            onLanguageChange={setLanguage}
-            onRunCode={handleRunCode}
-            isCompiling={isCompiling}
-            output={output}
-          />
-        </div>
+        {isWorkspaceOpen && (
+          <div className="w-[52%] hidden lg:block border-l border-border/40">
+            <ActivityPanel
+              code={code}
+              onChange={(val) => setCode(val || '')}
+              language={language}
+              onLanguageChange={setLanguage}
+              onRunCode={handleRunCode}
+              isCompiling={isCompiling}
+              output={output}
+            />
+          </div>
+        )}
 
       </div>
     </div>

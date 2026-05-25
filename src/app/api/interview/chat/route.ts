@@ -1,5 +1,5 @@
 import { streamInterviewTurn, type ResumeInterviewContext } from '@repo/ai'
-import { type ModelMessage } from 'ai'
+import { type ModelMessage, convertToCoreMessages } from 'ai'
 import { getSession } from '@/lib/auth-server'
 import { prisma } from '@repo/db'
 import { NextResponse } from 'next/server'
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const messages = rawMessages as ModelMessage[]
+  const messages = convertToCoreMessages(rawMessages) as ModelMessage[]
 
   // Get the next sequential turnIndex from the DB to avoid collisions on retry
   const existingTurnCount = await prisma.interviewTurn.count({

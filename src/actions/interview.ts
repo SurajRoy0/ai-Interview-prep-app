@@ -120,3 +120,38 @@ export async function endInterviewAction(
     return failure('Failed to end interview', 'INTERNAL_ERROR')
   }
 }
+
+export async function retryReportAction(
+  interviewId: string
+): Promise<ActionResult<void>> {
+  try {
+    const session = await getSession()
+    if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
+
+    const interview = await prisma.interview.findUnique({
+      where: { id: interviewId, userId: session.user.id },
+    })
+
+    if (!interview) return failure('Interview not found', 'NOT_FOUND')
+
+    if (interview.status === 'COMPLETED') return success(undefined)
+
+    await prisma.interview.update({
+      where: { id: interviewId },
+      data: { status: 'COMPLETED' }, // Ensure status allows worker to pick it up or at least clear FAILED
+    })
+
+    await reportQueue.add(
+      'generate-report',
+      { interviewId },
+      { jobId: interviewId, removeOnComplete: true, removeOnFail: false }
+    )
+
+    revalidatePath(`/interview/${interviewId}`)
+
+    return success(undefined)
+  } catch (error) {
+    console.error('[retryReportAction]', error)
+    return failure('Failed to retry report', 'INTERNAL_ERROR')
+  }
+}
