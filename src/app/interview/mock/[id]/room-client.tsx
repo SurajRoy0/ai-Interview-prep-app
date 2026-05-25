@@ -231,7 +231,7 @@ export function InterviewRoomClient({
               )}
 
               {messages.map((m) => {
-                const text = m.content || m.parts?.map((p) => (p.type === 'text' ? p.text : '')).join('') || ''
+                const text = ('content' in m ? (m as any).content : '') || m.parts?.map((p) => (p.type === 'text' ? p.text : '')).join('') || ''
                 const isUser = m.role === 'user'
                 return (
                   <div

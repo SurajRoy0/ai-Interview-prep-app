@@ -54,7 +54,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <p className="text-muted-foreground max-w-sm mb-6">
               Something went wrong while analyzing your interview. You can try generating it again.
             </p>
-            <form action={retryReportAction.bind(null, id)}>
+            <form action={async () => {
+              'use server'
+              await retryReportAction(id)
+            }}>
               <Button type="submit" variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10">
                 <RefreshCw className="w-4 h-4 mr-2" /> Retry Analysis
               </Button>
