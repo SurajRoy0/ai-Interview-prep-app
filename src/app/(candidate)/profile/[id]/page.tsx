@@ -1,17 +1,19 @@
-import { getJobProfileByIdAction } from '@/actions/job-profile'
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, Briefcase, Calendar, CheckCircle2, FileText, Activity } from 'lucide-react'
-import { ResumeUploader } from '@/components/resume/resume-uploader'
-import { ResumeCard } from '@/components/resume/resume-card'
-import { ClientRefreshPoller } from '@/components/resume/client-refresh-poller'
+import { getJobProfileByIdAction } from "@/actions/job-profile"
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft, Calendar, CheckCircle2, FileText, Activity, ArrowRight, Star } from "lucide-react"
+import { ResumeUploader } from "@/components/resume/resume-uploader"
+import { ResumeCard } from "@/components/resume/resume-card"
+import { ClientRefreshPoller } from "@/components/resume/client-refresh-poller"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 export default async function JobProfileDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  let profile;
+  const { id } = await params
+  let profile
   try {
     profile = await getJobProfileByIdAction(id)
-  } catch (e) {
+  } catch {
     notFound()
   }
 
@@ -19,8 +21,8 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
 
   // Sort resumes by version descending just in case createdAt was somehow out of order
   const sortedResumes = [...profile.resumes].sort((a, b) => b.version - a.version)
-  
-  const isProcessing = sortedResumes.some(r => r.parseStatus === 'PENDING' || r.parseStatus === 'PROCESSING')
+
+  const isProcessing = sortedResumes.some(r => r.parseStatus === "PENDING" || r.parseStatus === "PROCESSING")
 
   // Map to find which resumes have been used in interviews
   const resumeIdToInterviewCount = new Map<string, number>()
@@ -30,53 +32,95 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
   })
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
       <ClientRefreshPoller isProcessing={isProcessing} />
-      
-      {/* Header */}
-      <div className="flex items-center gap-4 border-b border-border pb-6">
-        <Link href="/dashboard" className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-        </Link>
-        <div>
-          <div className="flex items-center gap-2 text-primary font-medium text-sm mb-1 uppercase tracking-wider">
-            <Briefcase className="w-4 h-4" />
-            Job Profile
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border/50 pb-6">
+        <div className="flex items-start gap-4">
+          <Link
+            href="/dashboard"
+            className="mt-1 flex items-center justify-center h-8 w-8 rounded-full hover:bg-surface-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            title="Back to Dashboard"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+                {profile.title}
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1">
+              <span className="font-medium text-foreground">{profile.targetRole}</span>
+              <span className="w-1 h-1 rounded-full bg-border" />
+              <span>{profile.experienceLevel}</span>
+              <span className="w-1 h-1 rounded-full bg-border" />
+              <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 font-medium border-border/60">
+                {profile.ecosystem || "Language Agnostic"}
+              </Badge>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{profile.title}</h1>
-          <p className="text-muted-foreground mt-1">
-            Targeting <span className="font-semibold text-foreground">{profile.targetRole}</span> • {profile.experienceLevel} • {profile.ecosystem || 'Language Agnostic'}
-          </p>
+        </div>
+
+        {/* Header CTA for desktop */}
+        <div className="hidden md:block">
+          <Button
+            asChild={hasActiveResume}
+            disabled={!hasActiveResume}
+            size="sm"
+            className={`rounded-full px-6 gap-2 shadow-sm ${hasActiveResume ? "shadow-primary-glow" : ""}`}
+          >
+            {hasActiveResume ? (
+              <Link href="/interview/setup">Start Interview <ArrowRight className="w-4 h-4" /></Link>
+            ) : (
+              <span>Upload Resume First</span>
+            )}
+          </Button>
         </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">
-        
-        {/* Main Content Area */}
-        <div className="md:col-span-2 space-y-8">
-          
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <FileText className="w-6 h-6 text-primary" />
-              Resumes
-            </h2>
 
-            {/* Uploader is always visible so user can add new versions */}
-            <div className="mb-8">
-              <ResumeUploader jobProfileId={profile.id} isServerProcessing={isProcessing} />
+        {/* ── Main Content Area (2/3) ────────────────────────────────────────── */}
+        <div className="md:col-span-2 space-y-8">
+
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <FileText className="w-5 h-5 text-muted-foreground" />
+                Resumes
+              </h2>
+              {hasActiveResume && (
+                <Badge className="bg-primary/10 text-primary border-primary/20 gap-1 rounded-full font-medium shadow-sm">
+                  <Star className="w-3 h-3 fill-current" /> Active Version {profile.activeResume?.version}
+                </Badge>
+              )}
             </div>
 
-            {/* Resume History */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-foreground">Version History</h3>
+            {/* Uploader */}
+            <ResumeUploader jobProfileId={profile.id} isServerProcessing={isProcessing} />
+
+            {/* Version History */}
+            <div className="space-y-4 pt-4">
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border/40 pb-2">
+                Version History
+              </h3>
+
               {sortedResumes.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
-                  No resumes uploaded yet. Upload your first resume above.
+                <div className="text-center py-10 bg-surface-1 rounded-2xl border border-dashed border-border/60">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">No resumes uploaded</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+                    Upload your first resume above. We&apos;ll extract your skills and build your interview plan.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {sortedResumes.map(resume => (
-                    <ResumeCard 
+                    <ResumeCard
                       key={resume.id}
                       resume={resume}
                       isActive={resume.id === profile.activeResumeId}
@@ -90,53 +134,76 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
 
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-primary border border-primary rounded-3xl p-6 shadow-lg text-primary-foreground relative overflow-hidden group">
-            <div className="absolute right-0 top-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <h3 className="text-xl font-bold mb-2">Ready to practice?</h3>
-            <p className="text-primary-foreground/80 text-sm mb-6">
-              Start a new mock interview specifically tailored to {profile.targetRole} using your active resume.
-            </p>
-            <button 
-              disabled={!hasActiveResume}
-              className="w-full bg-background text-foreground font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              Start Interview
-            </button>
-            {!hasActiveResume && <p className="text-xs text-primary-foreground/60 mt-3 text-center">Upload and activate a resume first</p>}
+        {/* ── Sidebar (1/3) ──────────────────────────────────────────────────── */}
+        <div className="space-y-5">
+
+          {/* Quick Start Card */}
+          <div className="bg-primary border border-primary rounded-3xl p-6 shadow-primary-glow text-primary-foreground relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <h3 className="text-xl font-bold mb-2">Ready to practice?</h3>
+              <p className="text-primary-foreground/90 text-sm mb-6 leading-relaxed">
+                Start a mock interview tailored to <strong className="font-semibold">{profile.targetRole}</strong> using your active resume.
+              </p>
+              <Button
+                asChild={hasActiveResume}
+                disabled={!hasActiveResume}
+                size="lg"
+                className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl font-bold text-sm h-12 shadow-sm"
+              >
+                {hasActiveResume ? (
+                  <Link href="/interview/setup">Start Interview</Link>
+                ) : (
+                  <span>Start Interview</span>
+                )}
+              </Button>
+              {!hasActiveResume && (
+                <p className="text-xs text-primary-foreground/70 mt-3 text-center font-medium">
+                  Upload and activate a resume first
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-            <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-muted-foreground" />
-              Interview History
+          {/* Interview History */}
+          <div className="bg-surface-1 border border-border/50 rounded-3xl p-6 shadow-sm">
+            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              Recent Interviews
             </h3>
+
             {profile.interviews.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No interviews taken yet for this profile.</p>
+              <div className="text-center py-6">
+                <p className="text-sm font-medium text-foreground mb-1">No interviews yet</p>
+                <p className="text-xs text-muted-foreground">Your recent session results will appear here.</p>
+              </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {profile.interviews.map(interview => (
-                  <div key={interview.id} className="flex items-center justify-between group cursor-pointer hover:bg-muted/50 p-2 -mx-2 rounded-lg transition-colors">
+                  <Link
+                    key={interview.id}
+                    href={`/interview/${interview.id}`}
+                    className="flex items-center justify-between group bg-surface-2 hover:bg-surface-3 border border-border/40 p-3 rounded-xl transition-all duration-200"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary group-hover:border-primary transition-colors">
+                        <CheckCircle2 className="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                          {interview.title || 'Mock Interview'}
+                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
+                          {interview.title || "Mock Interview"}
                         </p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 uppercase tracking-wider font-medium">
                           <Calendar className="w-3 h-3" />
                           {new Date(interview.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-black text-foreground">{interview.overallScore || '--'}</p>
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Score</p>
+                    <div className="text-right pl-2">
+                      <p className="text-lg font-black text-foreground">{interview.overallScore || "--"}</p>
+                      <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">Score</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

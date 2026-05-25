@@ -17,10 +17,14 @@ export async function createInterviewAction(formData: unknown) {
     // If the data is bad, .parse() will throw an error immediately.
     const validatedData = createInterviewSchema.parse(formData)
 
-    // 4. DATABASE: Safe to use Prisma now because the data is validated
+    // 4. DATABASE: Fetch resume to get jobProfileId, then create interview
+    const resume = await prisma.resume.findUnique({ where: { id: validatedData.resumeId } })
+    if (!resume) throw new Error("Resume not found")
+
     const newInterview = await prisma.interview.create({
         data: {
             userId: session.user.id,
+            jobProfileId: resume.jobProfileId,
             resumeId: validatedData.resumeId,
             type: validatedData.type,
             status: 'PENDING'

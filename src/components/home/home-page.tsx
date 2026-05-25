@@ -1,332 +1,630 @@
 "use client"
 
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
 import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Badge } from "@/components/ui/badge"
 import { HomeNav } from "@/components/layout/home-nav"
+import { Logo, APP_NAME } from "@/components/shared/logo"
 import type { Session } from "@/lib/auth"
-import { Sparkles, Brain, Target, LineChart, Mic, BookOpen, CheckCircle2, ArrowRight } from "lucide-react"
+import {
+  ArrowRight, Mic, Brain, FileText, BarChart3, Zap,
+  CheckCircle2, CheckCheck, Code2, Timer, Star
+} from "lucide-react"
 
 interface HomePageProps {
   session: Session | null
 }
 
-export function HomePage({ session }: HomePageProps) {
-  return (
-    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/30">
+import type { Variants } from "framer-motion"
 
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+}
+
+const stagger: Variants = { show: { transition: { staggerChildren: 0.1 } } }
+
+// ─── Features ─────────────────────────────────────────────────────────────────
+const FEATURES = [
+  { icon: FileText, title: "Resume-Aware Questions", desc: "Upload your PDF or DOCX. We extract your exact projects and tech stack to ask questions only relevant to you — not generic practice problems." },
+  { icon: Mic, title: "Voice-First, Interrupt Freely", desc: "Speak naturally. The AI hears you. Even mid-sentence. The conversation flows like a real phone screen — no awkward button presses." },
+  { icon: Brain, title: "Adaptive Intelligence", desc: "Strong answer? The AI goes deeper. Weak answer? It probes fundamentals. Every session is uniquely calibrated to your level." },
+  { icon: Code2, title: "Practical Activities", desc: "Debug real code. Predict JS output. Defend your resume claims. Not just theory — the same challenges top companies actually use." },
+  { icon: BarChart3, title: "Honest Scoring", desc: "50 = average. 85 = strong. 90+ = rare. Scores are calibrated to match real interview standards — not inflated to make you feel good." },
+  { icon: Zap, title: "Actionable Learning Plan", desc: "Weak areas become specific prompts you can paste into ChatGPT or Claude for targeted practice. No vague 'study more JavaScript.'" },
+]
+
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+const PLANS = {
+  monthly: [
+    {
+      name: "Free Trial",
+      price: "₹0",
+      period: "one session",
+      description: "Try the full interview experience once, no card required.",
+      features: ["1 AI interview session", "Voice + text + code modes", "Basic performance report", "Resume parsing"],
+      cta: "Start free →",
+      href: "/register",
+      highlight: false,
+    },
+    {
+      name: "Pro",
+      price: "₹699",
+      period: "/ month",
+      badge: "Most Popular",
+      description: "Unlimited practice for serious candidates preparing to crack their next role.",
+      features: ["Unlimited AI interviews", "Deep analytics & scoring", "All 7 activity types", "Learning prompts library", "Interview history & trends", "Priority support"],
+      cta: "Get Pro →",
+      href: "/register",
+      highlight: true,
+    },
+    {
+      name: "Intensive",
+      price: "₹1,499",
+      period: "/ month",
+      description: "For candidates with active offers on the table and a 2-week deadline.",
+      features: ["Everything in Pro", "Daily session reminders", "Mock offer letter evaluation", "Salary negotiation prep", "WhatsApp support"],
+      cta: "Go Intensive →",
+      href: "/register",
+      highlight: false,
+    },
+  ],
+  yearly: [
+    {
+      name: "Free Trial",
+      price: "₹0",
+      period: "one session",
+      description: "Try the full interview experience once, no card required.",
+      features: ["1 AI interview session", "Voice + text + code modes", "Basic performance report", "Resume parsing"],
+      cta: "Start free →",
+      href: "/register",
+      highlight: false,
+    },
+    {
+      name: "Pro",
+      price: "₹499",
+      period: "/ month",
+      badge: "Save 28%",
+      description: "Billed annually. Best for 3-6 month job search cycles.",
+      features: ["Unlimited AI interviews", "Deep analytics & scoring", "All 7 activity types", "Learning prompts library", "Interview history & trends", "Priority support"],
+      cta: "Get Pro Yearly →",
+      href: "/register",
+      highlight: true,
+    },
+    {
+      name: "Intensive",
+      price: "₹1,099",
+      period: "/ month",
+      description: "Billed annually. For serious candidates who interview often.",
+      features: ["Everything in Pro", "Daily session reminders", "Mock offer letter evaluation", "Salary negotiation prep", "WhatsApp support"],
+      cta: "Go Intensive →",
+      href: "/register",
+      highlight: false,
+    },
+  ],
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+const FAQ = [
+  {
+    q: "How is Foxtel different from mock interview websites?",
+    a: "Most platforms give you a list of standard LeetCode-style questions. Foxtel reads your actual resume, references your projects by name, and builds a unique interview plan for your specific target role. The questions you get are the ones you'd actually face with your background.",
+  },
+  {
+    q: "Can I interrupt the AI while it's speaking?",
+    a: "Yes — this is a core feature. Just start talking. The AI will stop immediately and respond to what you said, naturally. It's designed to feel like a real conversation, not a scripted Q&A.",
+  },
+  {
+    q: "What tech stacks does Foxtel support?",
+    a: "JavaScript / TypeScript (React, Node, Next.js), Python, Java, Go, and language-agnostic system design. The AI understands your ecosystem from your resume and focuses questions there.",
+  },
+  {
+    q: "How accurate is the AI scoring?",
+    a: "Scores are calibrated to real interview feedback: 50 = average (basic understanding), 75 = good (handles most questions), 85 = strong (depth + reasoning), 90+ = exceptional. We deliberately avoid inflating scores — an honest 72 is more useful than a feel-good 92.",
+  },
+  {
+    q: "Do I need a microphone?",
+    a: "For the voice-first experience, yes. But you can also type all your answers — the interview works fully in text mode without any mic. Toggle the mode at any time.",
+  },
+  {
+    q: "How long does one session take?",
+    a: "A standard session is 12–15 minutes. There are 8–12 questions depending on the format you choose (HR+Technical, Technical Only, or Full Format). Activities add ~2 minutes each.",
+  },
+  {
+    q: "What happens to my resume data?",
+    a: "Your resume is parsed into structured data and stored securely. It is never shared with third parties. Each interview is \"frozen\" against a specific resume snapshot — so upgrading your resume doesn't affect previous session reports.",
+  },
+  {
+    q: "Can I take the same interview multiple times?",
+    a: "Yes. Each session generates a fresh interview plan with different questions, even for the same job profile. You can track your score progression over time and see where you've improved.",
+  },
+]
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+const STATS = [
+  { value: "15 min", label: "Average session length" },
+  { value: "94%", label: "Report with actionable weak areas" },
+  { value: "12", label: "Question types supported" },
+  { value: "5+", label: "Tech ecosystems" },
+]
+
+// ─── Companies (aspirational logos as text) ───────────────────────────────────
+const COMPANIES = ["Razorpay", "Swiggy", "Zepto", "Groww", "Meesho", "BrowserStack", "Postman"]
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function HomePage({ session }: HomePageProps) {
+  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly")
+  const plans = PLANS[billing]
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
       <HomeNav session={session} />
 
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden pt-24 pb-20 md:pt-32 md:pb-32 flex items-center justify-center min-h-[90vh]">
-          {/* Refined Grid Background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+      <main className="flex-1 pt-16">
 
-          {/* Animated Background Glows */}
+        {/* ──────────────────────────────────────────────────────────────────────
+            HERO
+        ────────────────────────────────────────────────────────────────────── */}
+        <section className="relative overflow-hidden min-h-[92vh] flex items-center justify-center py-24">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-violet-900/10" />
+
+          {/* Mesh grid bg */}
+          <div className="absolute inset-0 mesh-grid opacity-40 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,#000_60%,transparent_100%)]" />
+
+          {/* Ambient glows */}
           <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.15, 0.25, 0.15],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute top-1/4 left-1/4 -z-10 h-[500px] w-[500px] rounded-full bg-primary/30 blur-[120px]"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.18, 0.30, 0.18] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/3 left-1/4 -z-10 h-[560px] w-[560px] rounded-full bg-primary/40 blur-[130px]"
           />
           <motion.div
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.1, 0.2, 0.1],
-              x: [0, 40, 0]
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1
-            }}
-            className="absolute bottom-1/4 right-1/4 -z-10 h-[400px] w-[400px] rounded-full bg-blue-500/20 blur-[100px]"
+            animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.18, 0.08], x: [0, 30, 0] }}
+            transition={{ duration: 11, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            className="absolute bottom-1/4 right-1/4 -z-10 h-[400px] w-[400px] rounded-full bg-violet-400/20 blur-[100px]"
           />
 
-          <div className="container relative mx-auto px-4 text-center z-10 flex flex-col items-center">
+          <div className="relative z-10 mx-auto max-w-5xl px-4 text-center flex flex-col items-center">
+            {/* Badge */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.5, type: "spring", bounce: 0.3 }}
-              className="inline-flex items-center space-x-2 overflow-hidden rounded-full border border-primary/20 bg-primary/5 px-6 py-2 shadow-sm backdrop-blur-md transition-all hover:border-primary/40 hover:bg-primary/10 mb-8 cursor-default"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 text-sm font-medium text-primary backdrop-blur-sm"
             >
-              <Sparkles className="w-4 h-4 text-primary" />
-              <p className="text-sm font-medium text-foreground/90">
-                Introducing AI Interviews 2.0
-              </p>
+              <Star className="h-3.5 w-3.5 fill-primary" />
+              AI Interview Prep, built for Indian developers
             </motion.div>
 
-            <div className="overflow-hidden max-w-5xl">
-              <motion.h1
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, type: "spring", bounce: 0.2 }}
-                className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.1] text-foreground pb-2"
-              >
-                Master your next tech interview with <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">AI</span>.
-              </motion.h1>
-            </div>
+            {/* H1 */}
+            <motion.h1
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: "easeOut" }}
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold leading-[1.08] tracking-tight"
+            >
+              Practice with an AI that{" "}
+              <span className="text-gradient">actually listens</span>
+            </motion.h1>
 
+            {/* Subtitle */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-8 max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed"
+              className="mt-7 max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed"
             >
-              Upload your resume and experience a personalized AI interview that adapts to your skills. Get honest, actionable feedback to land your dream job.
+              Upload your resume. Take a 15-minute voice interview tailored to your exact background.
+              Get an honest report with weak areas, scores, and a learning roadmap.
             </motion.p>
 
+            {/* CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto"
+              transition={{ duration: 0.5, delay: 0.35 }}
+              className="mt-10 flex flex-col sm:flex-row items-center gap-3"
             >
-              <Button asChild size="lg" className="h-14 px-8 rounded-full text-base w-full sm:w-auto font-medium shadow-[0_0_40px_-10px_var(--primary)] hover:shadow-[0_0_60px_-15px_var(--primary)] transition-all duration-500 group">
-                <Link href="/register" className="flex items-center gap-2">
-                  Start free interview
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Button
+                asChild
+                size="lg"
+                className="h-13 px-8 rounded-full text-base font-semibold shadow-primary-glow hover:opacity-90 transition-opacity group"
+              >
+                <Link href={session ? "/dashboard" : "/register"} className="flex items-center gap-2">
+                  {session ? "Go to Dashboard" : "Start free interview"}
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="h-14 px-8 rounded-full text-base w-full sm:w-auto font-medium border-border/60 hover:bg-muted/50 backdrop-blur-sm transition-colors">
+              <Button asChild variant="outline" size="lg" className="h-13 px-8 rounded-full text-base font-medium">
                 <Link href="#how-it-works">See how it works</Link>
               </Button>
+            </motion.div>
+
+            {/* Trust note */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mt-5 text-xs text-muted-foreground/60"
+            >
+              No credit card required · 1 free session · Cancel anytime
+            </motion.p>
+          </div>
+        </section>
+
+        {/* ──────────────────────────────────────────────────────────────────────
+            LIVE DEMO MOCKUP
+        ────────────────────────────────────────────────────────────────────── */}
+        <section className="py-16 md:py-20 overflow-hidden">
+          <div className="mx-auto max-w-4xl px-4">
+            {/* Browser chrome */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6 }}
+              className="rounded-2xl border border-border/60 overflow-hidden shadow-2xl shadow-primary/8"
+            >
+              {/* Title bar */}
+              <div className="flex items-center gap-3 px-4 py-3 bg-surface-1 border-b border-border/50">
+                <div className="flex gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-red-400/80" />
+                  <span className="w-3 h-3 rounded-full bg-amber-400/80" />
+                  <span className="w-3 h-3 rounded-full bg-green-400/80" />
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <span className="text-xs font-mono text-muted-foreground bg-background/60 border border-border/40 px-3 py-1 rounded-md">
+                    foxtel.app/interview/active
+                  </span>
+                </div>
+                <Badge variant="outline" className="text-[10px] text-green-500 border-green-500/30 bg-green-500/8">
+                  ● Live
+                </Badge>
+              </div>
+
+              {/* Chat area */}
+              <div className="bg-background p-6 md:p-8 space-y-5 min-h-[280px]">
+                {/* AI message */}
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
+                  className="flex gap-3 max-w-[88%]"
+                >
+                  <div className="h-8 w-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0 mt-0.5">
+                    <Brain className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="bg-surface-1 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary/60 block mb-1">Interviewer</span>
+                    I see you built a real-time chat feature using Socket.io in your{" "}
+                    <strong>CollabSpace</strong> project. How did you handle message ordering when the connection briefly dropped?
+                  </div>
+                </motion.div>
+
+                {/* User message */}
+                <motion.div
+                  initial={{ opacity: 0, x: 12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 }}
+                  className="flex gap-3 max-w-[88%] ml-auto flex-row-reverse"
+                >
+                  <div className="h-8 w-8 rounded-full bg-surface-2 border border-border flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold">
+                    YOU
+                  </div>
+                  <div className="bg-primary/12 border border-primary/20 rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed">
+                    We used a sequence number on each message. The server assigned it. On reconnect, the client sent its last known sequence, and the server replayed anything it missed.
+                  </div>
+                </motion.div>
+
+                {/* AI follow-up with score badge */}
+                <motion.div
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.5 }}
+                  className="flex gap-3 max-w-[88%]"
+                >
+                  <div className="h-8 w-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0 mt-0.5">
+                    <Brain className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="relative bg-surface-1 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed">
+                    <span className="absolute -top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold text-white bg-score-high text-score-high border border-score-high/30 bg-green-500 px-2 py-0.5 rounded-full">
+                      <CheckCheck className="h-3 w-3" /> 82 / 100
+                    </span>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-primary/60 block mb-1">Interviewer</span>
+                    Good approach. How would this change at scale — say 100k concurrent connections?
+                  </div>
+                </motion.div>
+
+                {/* Input zone */}
+                <div className="flex items-center gap-3 pt-2 border-t border-border/30 mt-4">
+                  <div className="flex-1 flex items-center gap-2 bg-surface-1 border border-border/50 rounded-xl px-4 py-2.5">
+                    <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
+                    <span className="text-sm text-muted-foreground/60 italic">Listening — speak when ready</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 h-6">
+                    {[3, 6, 4, 7, 5, 8, 4, 6, 3].map((h, i) => (
+                      <span key={i} className="w-0.5 bg-primary/50 rounded-full animate-pulse" style={{ height: `${h}px`, animationDelay: `${i * 80}ms` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Social Proof Section */}
-        <section className="py-10 border-y border-border/40 bg-muted/20">
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-xs font-semibold text-muted-foreground tracking-widest uppercase mb-6">Trusted by candidates at top companies</p>
-            <div className="flex flex-wrap justify-center items-center gap-x-14 gap-y-8 opacity-50 grayscale transition-opacity hover:opacity-70">
-              <span className="text-xl font-bold font-serif">Acme Corp</span>
-              <span className="text-xl font-bold tracking-tighter">GLOBEX</span>
-              <span className="text-xl font-bold italic">Soylent</span>
-              <span className="text-xl font-bold">Initech</span>
-              <span className="text-xl font-bold uppercase tracking-widest">Umbrella</span>
+        {/* ──────────────────────────────────────────────────────────────────────
+            STATS / TRUST BAR
+        ────────────────────────────────────────────────────────────────────── */}
+        <section className="py-12 border-y border-border/40 bg-surface-1/50">
+          <div className="mx-auto max-w-5xl px-4">
+            <p className="text-center text-xs uppercase tracking-widest font-semibold text-muted-foreground/60 mb-8">
+              Trusted by developers from
+            </p>
+            <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-4 mb-10 opacity-50">
+              {COMPANIES.map(c => (
+                <span key={c} className="text-sm font-semibold text-foreground">{c}</span>
+              ))}
             </div>
-          </div>
-        </section>
-
-        {/* Interactive Mockup / Visualization */}
-        <section className="py-24 md:py-32 overflow-hidden relative">
-          <div className="absolute top-0 right-0 -z-10 w-full h-full bg-gradient-to-b from-transparent to-primary/5"></div>
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Experience the real thing</h2>
-              <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-lg">Our engine simulates the pressure and depth of a senior engineer interview.</p>
-            </div>
-            <div className="relative mx-auto max-w-5xl rounded-2xl border border-border/60 bg-background/60 backdrop-blur-xl shadow-2xl shadow-primary/5 overflow-hidden">
-              {/* Browser Header */}
-              <div className="flex items-center px-4 py-3 border-b border-border/60 bg-muted/40">
-                <div className="flex space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-                </div>
-                <div className="mx-auto text-xs font-medium text-muted-foreground font-mono bg-background/50 px-3 py-1 rounded-md border border-border/50 shadow-sm">
-                  foxtel-interview-session
-                </div>
-              </div>
-              
-              {/* Chat Interface */}
-              <div className="p-6 md:p-10 bg-gradient-to-b from-background/50 to-background flex flex-col gap-8">
-                {/* AI Message */}
-                <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex gap-4 items-start max-w-[85%]">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-sm">
-                    <Brain className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="bg-muted/50 border border-border/50 backdrop-blur-sm rounded-2xl rounded-tl-sm p-5 text-sm md:text-base leading-relaxed text-foreground shadow-sm">
-                    I see from your resume you built a real-time dashboard using React and WebSockets. Can you explain how you handled state synchronization when the WebSocket connection dropped?
-                  </div>
-                </motion.div>
-
-                {/* User Message */}
-                <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="flex gap-4 items-start max-w-[85%] self-end flex-row-reverse">
-                  <div className="h-10 w-10 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 shadow-sm">
-                    <span className="text-xs font-bold text-foreground">YOU</span>
-                  </div>
-                  <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-5 text-sm md:text-base leading-relaxed shadow-md shadow-primary/20">
-                    We implemented a local queue using Zustand. When the connection dropped, actions were pushed to the queue and saved to localStorage. Once reconnected, we replayed the queue with an exponential backoff strategy.
-                  </div>
-                </motion.div>
-
-                {/* AI Follow-up */}
-                <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.4 }} className="flex gap-4 items-start max-w-[85%]">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-sm">
-                    <Brain className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="bg-muted/50 border border-green-500/30 ring-1 ring-green-500/10 backdrop-blur-sm rounded-2xl rounded-tl-sm p-5 text-sm md:text-base leading-relaxed text-foreground shadow-sm relative">
-                    <div className="absolute -top-3.5 -right-3.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-md border border-green-400/20">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Great Answer
-                    </div>
-                    That&apos;s a robust approach. How did you handle conflicts if the server state changed while the client was disconnected?
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* How it Works */}
-        <section id="how-it-works" className="py-24 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-20">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">How Foxtel works</h2>
-              <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-lg">From upload to detailed analytics in under 15 minutes.</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto relative">
-              <div className="hidden md:block absolute top-12 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-border to-transparent z-0"></div>
-
-              {[
-                { step: "01", title: "Upload your Resume", desc: "Drop your PDF. We instantly parse your skills, ecosystem, and project history to tailor the interview." },
-                { step: "02", title: "Take the Interview", desc: "Engage in a dynamic, 15-minute technical conversation. The AI adapts to your skill level in real-time." },
-                { step: "03", title: "Get Actionable Insights", desc: "Receive a brutally honest score and a breakdown of your top weaknesses with steps to improve." }
-              ].map((item, i) => (
-                <div key={i} className="relative z-10 flex flex-col items-center text-center group">
-                  <div className="h-24 w-24 rounded-full bg-background border border-primary/20 flex items-center justify-center text-3xl font-bold text-primary mb-6 shadow-xl shadow-primary/5 group-hover:scale-105 transition-transform duration-300">
-                    {item.step}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4">
+              {STATS.map(({ value, label }) => (
+                <div key={label} className="text-center">
+                  <p className="text-2xl md:text-3xl font-extrabold text-foreground">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{label}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-24 md:py-32 border-t border-border/40 relative">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--primary)_0%,transparent_30%)] opacity-5"></div>
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-20">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Everything you need to succeed</h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
-              {[
-                { icon: BookOpen, title: "Resume Aware", desc: "Upload your PDF or DOCX. We instantly extract your projects, skills, and experience to ask highly relevant questions." },
-                { icon: Target, title: "Adaptive Difficulty", desc: "Ace a question? We dig deeper. Struggle? We pivot to fundamentals. Just like a real senior engineer." },
-                { icon: CheckCircle2, title: "Honest Scoring", desc: "No sugarcoating. You get real, objective scores on communication and technical depth." },
-                { icon: LineChart, title: "Skill Analytics", desc: "Track your progress over time across different topics like React, Node, System Design, and more." },
-                { icon: Mic, title: "Voice & Text", desc: "Speak naturally or type your answers. Our engine supports both modalities flawlessly." },
-                { icon: Brain, title: "Targeted Prep", desc: "Based on your weak points, we suggest specific concepts and resources you need to study." }
-              ].map((feature, i) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={i} className="bg-card border border-border/60 hover:border-primary/30 rounded-2xl p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      <Icon className="w-6 h-6 text-primary group-hover:text-primary-foreground" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{feature.desc}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section id="pricing" className="py-24 md:py-32 bg-muted/20 border-t border-border/40">
-          <div className="container mx-auto px-4">
+        {/* ──────────────────────────────────────────────────────────────────────
+            HOW IT WORKS
+        ────────────────────────────────────────────────────────────────────── */}
+        <section id="how-it-works" className="py-20 md:py-28">
+          <div className="mx-auto max-w-3xl px-4">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Simple, transparent pricing</h2>
-              <p className="mt-4 text-muted-foreground text-lg">Start for free. Upgrade when you need more practice.</p>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">How {APP_NAME} works</h2>
+              <p className="mt-4 text-muted-foreground text-lg">From zero to an honest report in under 20 minutes.</p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {/* Free Plan */}
-              <div className="border border-border/60 rounded-3xl p-8 bg-card flex flex-col relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-2xl font-bold">Free Trial</h3>
-                <div className="mt-4 flex items-baseline text-5xl font-extrabold tracking-tight">
-                  ₹0
-                  <span className="ml-2 text-lg font-medium text-muted-foreground">/first session</span>
-                </div>
-                <p className="mt-4 text-muted-foreground">Perfect to test our AI interviewer engine.</p>
-                <ul className="mt-8 space-y-4 flex-1">
-                  {['1 full personalized interview', 'Top 3 Weaknesses Report', 'Ecosystem Detection'].map((item, i) => (
-                    <li key={i} className="flex items-center gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                      <span className="text-base">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="outline" className="mt-10 w-full rounded-full h-12 font-medium border-border/60 hover:bg-muted" asChild>
-                  <Link href="/register">Get Started</Link>
-                </Button>
-              </div>
+            {/* Vertical timeline */}
+            <div className="relative">
+              {/* Connecting line */}
+              <div className="absolute left-5 top-6 bottom-6 w-px bg-gradient-to-b from-primary/60 via-primary/30 to-transparent" />
 
-              {/* Pro Plan */}
-              <div className="border-2 border-primary bg-background rounded-3xl p-8 flex flex-col relative overflow-hidden shadow-xl shadow-primary/10">
-                <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1.5 text-xs font-bold rounded-bl-xl uppercase tracking-wider shadow-sm">
-                  Most Popular
-                </div>
-                <h3 className="text-2xl font-bold text-primary">Pro Monthly</h3>
-                <div className="mt-4 flex items-baseline text-5xl font-extrabold tracking-tight">
-                  ₹699
-                  <span className="ml-2 text-lg font-medium text-muted-foreground">/mo</span>
-                </div>
-                <p className="mt-4 text-muted-foreground">Unlimited access for serious candidates.</p>
-                <ul className="mt-8 space-y-4 flex-1">
-                  {['Unlimited AI Interviews', 'Deep Skill Analytics', 'Historical Progress Tracking', 'Priority New Features'].map((item, i) => (
-                    <li key={i} className="flex items-center gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                      <span className="text-base font-medium">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button className="mt-10 w-full rounded-full h-12 font-medium shadow-lg shadow-primary/20" asChild>
-                  <Link href="/register">Subscribe Now</Link>
-                </Button>
-              </div>
+              {[
+                { n: "01", title: "Create a Job Profile", desc: "Tell us the role you're targeting — Frontend, Backend, Fullstack, or System Design. Set your experience level and ecosystem." },
+                { n: "02", title: "Upload your Resume", desc: "Drop your PDF or DOCX. Our AI parses your exact projects, skills, and experience to build a personalised interview plan." },
+                { n: "03", title: "Take the AI Interview", desc: "Speak naturally — or type. The AI asks questions from your resume, follows up on weak answers, and inserts coding activities." },
+                { n: "04", title: "Get your Report", desc: "Detailed scores across Technical, Communication, Confidence, and Authenticity. Weak areas with evidence. A learning roadmap." },
+              ].map((step, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ delay: i * 0.1 }}
+                  className="relative flex gap-6 mb-10 last:mb-0"
+                >
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center z-10 shadow-primary-glow">
+                    {step.n}
+                  </div>
+                  <div className="pt-1.5 pb-8 border-b border-border/30 last:border-0 flex-1">
+                    <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{step.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-24 md:py-32 border-t border-border/40 relative overflow-hidden">
-          <div className="absolute inset-0 bg-primary/5"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[100px] -z-10"></div>
-          <div className="container mx-auto px-4 text-center relative z-10">
-            <h2 className="text-3xl font-bold tracking-tight md:text-5xl mb-6">Ready to land your dream job?</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto mb-10 text-lg">
-              Join thousands of developers who have improved their interview skills and landed offers at top tech companies.
-            </p>
-            <Button asChild size="lg" className="h-14 px-10 rounded-full text-lg font-medium shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-shadow">
-              <Link href="/register">Start your free interview</Link>
-            </Button>
+        {/* ──────────────────────────────────────────────────────────────────────
+            FEATURES
+        ────────────────────────────────────────────────────────────────────── */}
+        <section id="features" className="py-20 md:py-28 bg-surface-1/40 border-y border-border/40">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="text-center mb-16">
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/8">Features</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Built for real interviews</h2>
+              <p className="mt-4 text-muted-foreground text-lg max-w-xl mx-auto">Everything that makes the difference between passing and failing a tech screen.</p>
+            </div>
+
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-60px" }}
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-5"
+            >
+              {FEATURES.map(({ icon: Icon, title, desc }) => (
+                <motion.div
+                  key={title}
+                  variants={fadeUp}
+                  className="bg-card border border-border/50 hover:border-primary/30 rounded-2xl p-6 group hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 cursor-default"
+                >
+                  <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:border-primary transition-colors duration-300">
+                    <Icon className="h-5 w-5 text-primary group-hover:text-primary-foreground transition-colors duration-300" />
+                  </div>
+                  <h3 className="font-semibold text-base mb-2">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ──────────────────────────────────────────────────────────────────────
+            PRICING
+        ────────────────────────────────────────────────────────────────────── */}
+        <section id="pricing" className="py-20 md:py-28">
+          <div className="mx-auto max-w-5xl px-4">
+            <div className="text-center mb-12">
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/8">Pricing</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Simple, transparent pricing</h2>
+              <p className="mt-4 text-muted-foreground text-lg">Start free. Upgrade when you&apos;re ready.</p>
+
+              {/* Toggle */}
+              <div className="mt-8 inline-flex items-center gap-1 bg-surface-1 border border-border/50 rounded-full p-1">
+                {(["monthly", "yearly"] as const).map(b => (
+                  <button
+                    key={b}
+                    onClick={() => setBilling(b)}
+                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${billing === b
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    {b === "monthly" ? "Monthly" : "Yearly · Save 28%"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-5">
+              {plans.map((plan) => (
+                <div
+                  key={plan.name}
+                  className={`relative rounded-2xl p-6 flex flex-col transition-all duration-300 ${plan.highlight
+                      ? "border-2 border-primary bg-primary/5 shadow-xl shadow-primary/15"
+                      : "border border-border/50 bg-card"
+                    }`}
+                >
+                  {plan.badge && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 text-[11px] font-bold text-primary-foreground bg-primary px-3 py-1 rounded-full">
+                      <Star className="h-2.5 w-2.5 fill-current" /> {plan.badge}
+                    </span>
+                  )}
+                  <div>
+                    <h3 className={`text-base font-semibold ${plan.highlight ? "text-primary" : ""}`}>{plan.name}</h3>
+                    <div className="mt-3 flex items-baseline gap-1">
+                      <span className="text-4xl font-extrabold tracking-tight">{plan.price}</span>
+                      <span className="text-sm text-muted-foreground">{plan.period}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{plan.description}</p>
+                  </div>
+                  <ul className="mt-6 space-y-2.5 flex-1">
+                    {plan.features.map(f => (
+                      <li key={f} className="flex items-start gap-2.5 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    asChild
+                    className={`mt-8 rounded-full w-full font-semibold ${plan.highlight ? "shadow-primary-glow" : ""}`}
+                    variant={plan.highlight ? "default" : "outline"}
+                  >
+                    <Link href={plan.href}>{plan.cta}</Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ──────────────────────────────────────────────────────────────────────
+            FAQ
+        ────────────────────────────────────────────────────────────────────── */}
+        <section id="faq" className="py-20 md:py-28 bg-surface-1/40 border-y border-border/40">
+          <div className="mx-auto max-w-2xl px-4">
+            <div className="text-center mb-12">
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30 bg-primary/8">FAQ</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Common questions</h2>
+            </div>
+            <Accordion type="single" collapsible className="space-y-2">
+              {FAQ.map((item, i) => (
+                <AccordionItem
+                  key={i}
+                  value={`faq-${i}`}
+                  className="border border-border/50 rounded-xl px-5 bg-card data-[state=open]:border-primary/30"
+                >
+                  <AccordionTrigger className="text-sm font-medium text-left hover:no-underline py-4">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </section>
+
+        {/* ──────────────────────────────────────────────────────────────────────
+            FINAL CTA
+        ────────────────────────────────────────────────────────────────────── */}
+        <section className="py-24 md:py-32 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-violet-900/10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] bg-primary/15 rounded-full blur-[120px] -z-10" />
+
+          <div className="relative z-10 mx-auto max-w-3xl px-4 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
+                Stop guessing.<br />
+                Start knowing where you stand.
+              </h2>
+              <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
+                One free session. No credit card. An honest report that shows exactly what a real interviewer would think of your answers.
+              </p>
+              <Button asChild size="lg" className="h-14 px-10 rounded-full text-base font-semibold shadow-primary-glow hover:opacity-90 transition-opacity">
+                <Link href={session ? "/dashboard" : "/register"} className="flex items-center gap-2">
+                  {session ? "Go to Dashboard" : "Start your free interview"}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <p className="mt-4 text-xs text-muted-foreground/50">No credit card · 1 free session · Setup in 2 minutes</p>
+            </motion.div>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 py-12 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-foreground flex items-center justify-center shadow-sm">
-                <span className="text-background font-bold text-sm leading-none">F</span>
-              </div>
-              <span className="font-semibold tracking-tight text-lg">Foxtel</span>
+      {/* ──────────────────────────────────────────────────────────────────────
+          FOOTER
+      ────────────────────────────────────────────────────────────────────── */}
+      <footer className="border-t border-border/40 py-12 bg-surface-1/30">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+            <div className="md:col-span-2">
+              <Logo size="md" showName href="/" />
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-xs">
+                AI-powered mock interviews that adapt to your resume and give honest, actionable feedback.
+              </p>
+              <p className="mt-4 text-xs text-muted-foreground/50">Built in India 🇮🇳 with ❤️</p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Foxtel. All rights reserved.
-            </p>
-            <div className="flex gap-6">
-              <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
-              <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-4">Product</h4>
+              <ul className="space-y-2.5">
+                {[["#how-it-works", "How it Works"], ["#features", "Features"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
+                  <li key={href}><Link href={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{label}</Link></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-4">Legal</h4>
+              <ul className="space-y-2.5">
+                {[["#", "Privacy Policy"], ["#", "Terms of Service"], ["#", "Refund Policy"]].map(([href, label]) => (
+                  <li key={label}><Link href={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{label}</Link></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-border/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} {APP_NAME}. All rights reserved.</p>
+            <div className="flex items-center gap-2">
+              <Timer className="h-3.5 w-3.5 text-muted-foreground/40" />
+              <span className="text-xs text-muted-foreground/40">15 min to your first score</span>
             </div>
           </div>
         </div>

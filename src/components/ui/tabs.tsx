@@ -16,7 +16,7 @@ function Tabs({
       data-slot="tabs"
       data-orientation={orientation}
       className={cn(
-        "group/tabs flex gap-2 data-horizontal:flex-col",
+        "group/tabs flex flex-col gap-2 data-horizontal:flex-col",
         className
       )}
       {...props}
@@ -49,7 +49,12 @@ function TabsList({
     <TabsPrimitive.List
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn(
+        tabsListVariants({ variant }),
+        // Vertical orientation — stack triggers in a column
+        "data-[orientation=vertical]:flex-col data-[orientation=vertical]:h-fit data-[orientation=vertical]:w-full",
+        className
+      )}
       {...props}
     />
   )

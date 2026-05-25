@@ -1,42 +1,71 @@
-import Link from "next/link"
+import { Logo } from "@/components/shared/logo"
+import { CheckCircle2 } from "lucide-react"
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-screen grid-cols-1 md:grid-cols-2 bg-background">
-      <div className="hidden flex-col justify-between border-r border-border/40 bg-zinc-950 p-10 text-white md:flex relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2 bg-background">
+      
+      {/* ── Left Panel (Brand/Marketing) ───────────────────────────────────── */}
+      <div className="hidden lg:flex flex-col justify-between border-r border-border/40 bg-surface-1 p-12 text-foreground relative overflow-hidden">
+        
+        {/* Subtle mesh background and primary glow */}
+        <div className="absolute inset-0 mesh-grid opacity-30" />
+        <div className="absolute top-1/4 left-0 h-[400px] w-[400px] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 h-[300px] w-[300px] rounded-full bg-blue-500/10 blur-[100px] pointer-events-none" />
 
-        <div className="relative z-10 flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-            <span className="text-sm font-bold leading-none">F</span>
-          </div>
-          <span className="text-xl font-semibold tracking-tight">Foxtel</span>
+        {/* Top: Logo */}
+        <div className="relative z-10">
+          <Logo size="lg" showName href="/" />
         </div>
 
-        <div className="relative z-10 mt-auto">
-          <blockquote className="space-y-4">
-            <p className="text-2xl font-medium leading-relaxed tracking-tight text-zinc-200">
-              &ldquo;The personalized AI interviews helped me identify my weak spots in React. The
-              structured feedback was exactly what I needed to land my dream job.&rdquo;
+        {/* Center: Value props */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center mt-12">
+          <div className="space-y-6 max-w-md">
+            <h2 className="text-3xl font-extrabold tracking-tight leading-tight">
+              Master your next tech interview with an AI that listens.
+            </h2>
+            
+            <ul className="space-y-4 pt-2">
+              {[
+                "Resume-aware questions tailored to you",
+                "Voice-first interface — speak naturally",
+                "Detailed feedback and honest scoring in 15 mins"
+              ].map((feature, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <span className="text-muted-foreground font-medium">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom: Testimonial */}
+        <div className="relative z-10 mt-auto pt-12 border-t border-border/40">
+          <blockquote className="space-y-4 max-w-md">
+            <p className="text-lg font-medium leading-relaxed text-foreground/90 italic">
+              &quot;The personalized AI interviews helped me identify my weak spots in React. The structured feedback was exactly what I needed to land my role at Swiggy.&quot;
             </p>
-            <footer className="text-sm text-zinc-400">
-              <span className="font-semibold text-white">Alex Chen</span>
-              {" "}— Senior Frontend Engineer
+            <footer className="text-sm">
+              <span className="font-bold text-foreground">Rohan Mehta</span>
+              <span className="text-muted-foreground"> — SDE II</span>
             </footer>
           </blockquote>
         </div>
       </div>
 
-      <div className="flex flex-col p-6 md:p-10 justify-center">
-        <div className="flex justify-center md:hidden mb-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <span className="text-sm font-bold leading-none">F</span>
-            </div>
-            <span className="text-xl font-semibold tracking-tight">Foxtel</span>
-          </Link>
+      {/* ── Right Panel (Auth Forms) ───────────────────────────────────────── */}
+      <div className="flex flex-col p-6 sm:p-10 lg:p-12 justify-center relative overflow-hidden">
+        {/* Subtle mesh background and primary glow */}
+        <div className="absolute inset-0 mesh-grid opacity-20 pointer-events-none" />
+        <div className="absolute bottom-1/4 right-0 h-[300px] w-[300px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+        
+        {/* Mobile Logo Header */}
+        <div className="flex justify-center lg:hidden absolute top-8 left-0 right-0 z-10">
+          <Logo size="md" showName href="/" />
         </div>
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
+        
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px] relative z-10">
           {children}
         </div>
       </div>

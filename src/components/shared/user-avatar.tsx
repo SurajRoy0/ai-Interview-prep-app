@@ -37,9 +37,9 @@ export function UserAvatar({
         {image ? <AvatarImage src={image} alt={displayName} /> : null}
         <AvatarFallback className="text-xs">{initials}</AvatarFallback>
       </Avatar>
-      <div className="hidden md:flex min-w-0 flex-col">
-        <span className="truncate text-sm font-medium leading-none">{displayName}</span>
-        <span className="truncate text-xs text-muted-foreground mt-1">{email}</span>
+      <div className="max-md:hidden min-w-0 text-start">
+        <p className="truncate text-sm font-medium leading-none">{displayName}</p>
+        <p className="truncate text-xs text-muted-foreground mt-1">{email}</p>
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 export type ActionError = {
   message: string;
   code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 };
 
 export type ActionResult<T = void> = 
@@ -12,7 +12,7 @@ export function success<T>(data: T): ActionResult<T> {
   return { success: true, data };
 }
 
-export function failure(message: string, code?: string, details?: Record<string, any>): ActionResult<any> {
+export function failure<T = never>(message: string, code?: string, details?: Record<string, unknown>): ActionResult<T> {
   return { 
     success: false, 
     error: { message, code, details } 

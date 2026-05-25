@@ -1,144 +1,228 @@
 import Link from "next/link"
 import { getDashboardProfile } from "@/actions/user"
 import { getJobProfilesAction } from "@/actions/job-profile"
-import { ArrowRight, FileText, CheckCircle2, CircleDashed, Mic, Activity, Clock, Zap, Plus, Briefcase } from "lucide-react"
+import {
+  ArrowRight, FileText, CheckCircle2, CircleDashed,
+  Mic, Plus, Briefcase, Target, ChevronRight, Sparkles
+} from "lucide-react"
+import { CreateProfileDialog } from "@/components/profile/create-profile-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+
+// ─── Ecosystem → colour mapping ───────────────────────────────────────────────
+const ECOSYSTEM_COLOR: Record<string, string> = {
+  JAVASCRIPT: "text-yellow-500 bg-yellow-500/10 border-yellow-500/25",
+  PYTHON: "text-blue-400 bg-blue-400/10 border-blue-400/25",
+  JAVA: "text-orange-500 bg-orange-500/10 border-orange-500/25",
+  GO: "text-cyan-400 bg-cyan-400/10 border-cyan-400/25",
+  OTHER: "text-muted-foreground bg-muted border-border",
+}
+
+const LEVEL_LABEL: Record<string, string> = {
+  FRESHER: "Fresher",
+  JUNIOR: "Junior",
+  MID: "Mid-Level",
+  SENIOR: "Senior",
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const user = await getDashboardProfile()
-  const profiles = await getJobProfilesAction()
+  const [user, profiles] = await Promise.all([
+    getDashboardProfile(),
+    getJobProfilesAction(),
+  ])
 
   const name = user.name?.split(" ")[0] ?? "there"
   const interviewCount = user._count.interviews
   const resumeCount = user._count.resumes
+  const hasCredits = !user.freeInterviewUsed
+
+  const hour = new Date().getHours()
+  const greeting =
+    hour < 12 ? "Good morning" :
+      hour < 17 ? "Good afternoon" :
+        "Good evening"
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
 
-      {/* Hero Greeting */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-            Welcome back, {name}.
+      {/* ── Greeting Header ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            {greeting}, {name} 👋
           </h1>
-          <p className="text-muted-foreground text-lg max-w-xl">
-            Here's a high-level overview of your interview preparation journey.
+          <p className="text-muted-foreground text-sm mt-1">
+            {profiles.length === 0
+              ? "Create a job profile to get started."
+              : `You have ${profiles.length} job profile${profiles.length !== 1 ? "s" : ""} set up.`}
           </p>
         </div>
 
-        <div className="flex items-center gap-3 bg-card border border-border px-4 py-2.5 rounded-2xl shadow-sm">
-          <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20">
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.8)] animate-pulse" />
+        {/* Credits pill */}
+        <div className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium ${hasCredits
+            ? "bg-green-500/8 border-green-500/25 text-green-600 dark:text-green-400"
+            : "bg-surface-1 border-border text-muted-foreground"
+          }`}>
+          <span className={`h-2 w-2 rounded-full ${hasCredits ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-muted-foreground/40"}`} />
+          {hasCredits ? "1 free session available" : "Free session used"}
+        </div>
+      </div>
+
+      {/* ── Stats Row ───────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+        {/* Total Interviews */}
+        <div className="bg-card border border-border/50 rounded-2xl p-5 group hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Interviews</p>
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Mic className="h-3.5 w-3.5 text-primary" />
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Credits</p>
-            <p className="text-foreground font-bold">{user.freeInterviewUsed ? "Used" : "1 Available"}</p>
+          <p className="text-3xl font-extrabold tracking-tight">{interviewCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">{interviewCount === 0 ? "No interviews yet" : "sessions completed"}</p>
+        </div>
+
+        {/* Resumes */}
+        <div className="bg-card border border-border/50 rounded-2xl p-5 group hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Resumes</p>
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+            </div>
+          </div>
+          <p className="text-3xl font-extrabold tracking-tight">{resumeCount}</p>
+          <p className="text-xs text-muted-foreground mt-1">across all profiles</p>
+        </div>
+
+        {/* Quick Start CTA — spans 2 cols on mobile (full width), 1 col on md */}
+        <div className="col-span-2 md:col-span-1 bg-primary rounded-2xl p-5 text-primary-foreground relative overflow-hidden group shadow-primary-glow">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-80">Quick Start</p>
+            </div>
+            <h3 className="font-bold text-lg leading-tight mb-4">Ready to practice?</h3>
+            <Button asChild size="sm" className="bg-background text-foreground hover:bg-background/90 rounded-full gap-1.5 font-semibold text-xs h-8">
+              <Link href="/interview/setup">
+                Start Interview <ArrowRight className="h-3 w-3" />
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="p-6 rounded-3xl bg-card border border-border shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute -right-4 -top-4 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110">
-            <Mic className="w-32 h-32" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">Total Interviews</p>
-          <p className="text-5xl font-black text-foreground">{interviewCount}</p>
-        </div>
-
-        <div className="p-6 rounded-3xl bg-card border border-border shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute -right-4 -top-4 p-6 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110">
-            <FileText className="w-32 h-32" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">Active Resumes</p>
-          <p className="text-5xl font-black text-foreground">{resumeCount}</p>
-        </div>
-
-        <div className="p-6 rounded-3xl bg-primary border border-primary text-primary-foreground flex flex-col justify-center items-start shadow-lg relative overflow-hidden group">
-          <div className="absolute right-0 top-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <h3 className="text-xl font-bold mb-2">Ready to practice?</h3>
-          <p className="text-primary-foreground/80 text-sm mb-4">Start a new AI-driven mock interview tailored to your resume.</p>
-          <Link href="/interview/setup" className="inline-flex items-center gap-2 bg-background text-foreground px-4 py-2 rounded-full text-sm font-bold hover:opacity-90 transition-opacity shadow-sm">
-            Start Interview <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Job Profiles Section */}
+      {/* ── Job Profiles ─────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-primary" />
-            Your Job Profiles
-          </h2>
-          <Link href="/profile/create" className="text-sm bg-secondary text-secondary-foreground px-4 py-2 rounded-full hover:opacity-80 font-bold transition-opacity flex items-center gap-2 border border-border">
-            <Plus className="w-4 h-4" /> Create Profile
-          </Link>
-        </div>
-
-        <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
-          <div className="divide-y divide-border">
-
-            {profiles.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center justify-center bg-muted/10">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Briefcase className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">No job profiles yet</h3>
-                <p className="text-muted-foreground max-w-sm mb-6">Create a job profile to upload your resume and start generating tailored interviews.</p>
-                <Link href="/profile/create" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-all font-bold shadow-md">
-                  <Plus className="h-4 w-4" />
-                  Create First Profile
-                </Link>
-              </div>
-            ) : (
-              profiles.map(profile => (
-                <div key={profile.id} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 hover:bg-muted/50 transition-colors cursor-pointer relative">
-                  
-                  {/* Invisible link overlay for entire row */}
-                  <Link href={`/profile/${profile.id}`} className="absolute inset-0 z-0"></Link>
-
-                  <div className="flex items-start gap-4 z-10 pointer-events-none">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 flex-shrink-0">
-                      <Briefcase className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{profile.title}</h3>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                        <span className="flex items-center gap-1.5"><TargetIcon className="w-4 h-4" /> {profile.targetRole}</span>
-                        <span className="w-1 h-1 rounded-full bg-border" />
-                        <span className="flex items-center gap-1.5">
-                          {profile.activeResume ? (
-                            <><CheckCircle2 className="w-4 h-4 text-green-500" /> Resume active</>
-                          ) : (
-                            <><CircleDashed className="w-4 h-4 text-yellow-500" /> Needs resume</>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="z-10 flex gap-4 text-sm text-muted-foreground text-right hidden sm:block pointer-events-none">
-                     <p className="font-bold text-foreground">{profile._count.interviews}</p>
-                     <p className="text-xs uppercase tracking-wider">Interviews</p>
-                  </div>
-                </div>
-              ))
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-base font-semibold">Job Profiles</h2>
+            {profiles.length > 0 && (
+              <Badge variant="secondary" className="text-xs">{profiles.length}</Badge>
             )}
-
           </div>
+          {/* Dialog trigger — create profile inline */}
+          <CreateProfileDialog>
+            <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-8 text-xs border-border/60">
+              <Plus className="h-3.5 w-3.5" /> New Profile
+            </Button>
+          </CreateProfileDialog>
         </div>
+
+        {profiles.length === 0 ? (
+          /* Empty state */
+          <div className="bg-card border border-dashed border-border/60 rounded-2xl p-12 text-center flex flex-col items-center">
+            <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+              <Briefcase className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="font-semibold text-base mb-1">No job profiles yet</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
+              Create a profile for each role you&apos;re targeting. Then upload your resume and start a tailored interview.
+            </p>
+            <CreateProfileDialog>
+              <Button size="sm" className="rounded-full gap-2 shadow-primary-glow">
+                <Plus className="h-4 w-4" /> Create First Profile
+              </Button>
+            </CreateProfileDialog>
+          </div>
+        ) : (
+          /* Profile cards */
+          <div className="grid sm:grid-cols-2 gap-3">
+            {profiles.map(profile => {
+              const ecosystemClass = ECOSYSTEM_COLOR[profile.ecosystem ?? "OTHER"] ?? ECOSYSTEM_COLOR.OTHER
+              const level = LEVEL_LABEL[profile.experienceLevel] ?? profile.experienceLevel
+
+              return (
+                <Link
+                  key={profile.id}
+                  href={`/profile/${profile.id}`}
+                  className="group bg-card border border-border/50 hover:border-primary/35 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:shadow-primary/5 transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                      <Briefcase className="h-4.5 w-4.5 text-primary" />
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-0.5" />
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">
+                      {profile.title}
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Target className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{profile.targetRole}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] px-2 py-0.5 font-medium ${ecosystemClass}`}
+                      >
+                        {profile.ecosystem ?? "General"}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-medium text-muted-foreground border-border/50">
+                        {level}
+                      </Badge>
+                    </div>
+
+                    {/* Resume status */}
+                    <span className={`flex items-center gap-1 text-[10px] font-medium ${profile.activeResume ? "text-green-500" : "text-amber-500"
+                      }`}>
+                      {profile.activeResume
+                        ? <><CheckCircle2 className="h-3 w-3" /> Resume ready</>
+                        : <><CircleDashed className="h-3 w-3" /> No resume</>
+                      }
+                    </span>
+                  </div>
+
+                  {/* Interview count */}
+                  <div className="pt-3 border-t border-border/40 flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{profile._count.interviews} interview{profile._count.interviews !== 1 ? "s" : ""}</span>
+                    <span className="text-[10px] text-muted-foreground/50">{profile._count.resumes} resume{profile._count.resumes !== 1 ? "s" : ""}</span>
+                  </div>
+                </Link>
+              )
+            })}
+
+            {/* Add another card */}
+            {/* <CreateProfileDialog>
+              <div className="group border border-dashed border-border/50 hover:border-primary/40 hover:bg-primary/3 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200 min-h-[180px]">
+                <div className="h-9 w-9 rounded-full border border-dashed border-border/60 group-hover:border-primary/40 flex items-center justify-center transition-colors">
+                  <Plus className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                </div>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Add profile</span>
+              </div>
+            </CreateProfileDialog> */}
+          </div>
+        )}
       </div>
-
     </div>
-  )
-}
-
-function TargetIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
   )
 }

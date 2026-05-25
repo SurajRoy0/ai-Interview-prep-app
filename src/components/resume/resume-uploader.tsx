@@ -1,10 +1,10 @@
-'use client'
+"use client"
 
-import { useState, useCallback, useEffect } from 'react'
-import { useDropzone } from 'react-dropzone'
-import { uploadResumeAction } from '@/actions/resume'
-import { toast } from 'sonner'
-import { UploadCloud, FileText, Loader2, AlertCircle } from 'lucide-react'
+import { useState, useCallback, useEffect } from "react"
+import { useDropzone } from "react-dropzone"
+import { uploadResumeAction } from "@/actions/resume"
+import { toast } from "sonner"
+import { UploadCloud, FileText, Loader2, AlertCircle, Sparkles } from "lucide-react"
 
 const LOADING_MESSAGES = [
   "Reading your resume like a recruiter on 2 coffees ☕",
@@ -14,7 +14,12 @@ const LOADING_MESSAGES = [
   "Converting resume chaos into structured intelligence ✨"
 ]
 
-export function ResumeUploader({ jobProfileId, isServerProcessing }: { jobProfileId: string, isServerProcessing?: boolean }) {
+interface Props {
+  jobProfileId: string
+  isServerProcessing?: boolean
+}
+
+export function ResumeUploader({ jobProfileId, isServerProcessing }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -35,11 +40,11 @@ export function ResumeUploader({ jobProfileId, isServerProcessing }: { jobProfil
     }
   }, [])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+      "application/pdf": [".pdf"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"]
     },
     maxFiles: 1,
     maxSize: 5 * 1024 * 1024 // 5MB
@@ -51,22 +56,21 @@ export function ResumeUploader({ jobProfileId, isServerProcessing }: { jobProfil
     setIsUploading(true)
     setUploadError(null)
     const formData = new FormData()
-    formData.append('file', file)
-    formData.append('jobProfileId', jobProfileId)
+    formData.append("file", file)
+    formData.append("jobProfileId", jobProfileId)
 
     try {
       const result = await uploadResumeAction(formData)
-      
       if (result.success) {
-        toast.success('Resume uploaded! AI is analyzing it now.')
+        toast.success("Resume uploaded! AI is analyzing it now.")
       } else {
-        setUploadError(result.error?.message || 'Upload failed')
+        setUploadError(result.error?.message || "Upload failed")
         setIsUploading(false)
         setFile(null)
       }
     } catch (e) {
       console.error(e)
-      setUploadError('A network or server error occurred')
+      setUploadError("A network or server error occurred")
       setIsUploading(false)
       setFile(null)
     }
@@ -83,16 +87,30 @@ export function ResumeUploader({ jobProfileId, isServerProcessing }: { jobProfil
 
   if (isUploading || isServerProcessing) {
     return (
-      <div className="bg-card border border-border rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        <h3 className="text-xl font-bold text-foreground">
-          {isUploading && !isServerProcessing ? 'Uploading Document...' : 'AI is Parsing Resume...'}
-        </h3>
-        <p className="text-muted-foreground text-sm font-medium animate-pulse min-h-[40px]">
-          {isUploading && !isServerProcessing 
-            ? 'Sending your file securely to our servers.'
-            : LOADING_MESSAGES[messageIndex]}
-        </p>
+      <div className="bg-surface-1 border border-border/50 rounded-3xl p-10 flex flex-col items-center justify-center text-center space-y-5 shadow-sm relative overflow-hidden">
+        {/* Subtle background pulse */}
+        <div className="absolute inset-0 bg-primary/5 animate-pulse" />
+
+        <div className="relative z-10">
+          <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 shadow-primary-glow">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground">
+            {isUploading && !isServerProcessing ? "Uploading Document..." : "AI is Parsing Resume..."}
+          </h3>
+          <p className="text-muted-foreground text-sm font-medium animate-pulse min-h-[40px] mt-2 max-w-[280px] mx-auto leading-relaxed">
+            {isUploading && !isServerProcessing
+              ? "Sending your file securely to our servers."
+              : LOADING_MESSAGES[messageIndex]}
+          </p>
+
+          {/* Progress bar visual only */}
+          {isServerProcessing && (
+            <div className="w-full max-w-xs mx-auto h-1.5 bg-border rounded-full mt-6 overflow-hidden">
+              <div className="h-full bg-primary w-full animate-pulse rounded-full" style={{ animationDuration: '2s' }} />
+            </div>
+          )}
+        </div>
       </div>
     )
   }
@@ -100,51 +118,70 @@ export function ResumeUploader({ jobProfileId, isServerProcessing }: { jobProfil
   return (
     <div className="space-y-4">
       {uploadError && (
-        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl flex items-center gap-3">
-          <AlertCircle className="w-5 h-5" />
-          <span className="text-sm font-medium">{uploadError}</span>
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl flex items-center gap-3 shadow-sm">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-medium leading-relaxed">{uploadError}</span>
         </div>
       )}
 
       {!file ? (
-        <div 
-          {...getRootProps()} 
-          className={`border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-colors ${
-            isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-muted/50'
+        <div
+          {...getRootProps()}
+          className={`relative border-2 border-dashed rounded-3xl p-10 text-center cursor-pointer transition-all duration-300 group ${
+            isDragActive
+              ? "border-primary bg-primary/5 shadow-primary-glow"
+              : "border-border/60 hover:border-primary/40 hover:bg-surface-1"
           }`}
         >
           <input {...getInputProps()} />
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-            <UploadCloud className="w-8 h-8 text-primary" />
+
+          {/* Icon */}
+          <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5 transition-colors ${
+            isDragActive ? "bg-primary text-primary-foreground shadow-md" : "bg-surface-2 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+          }`}>
+            <UploadCloud className={`w-8 h-8 ${isDragActive ? "animate-bounce" : ""}`} />
           </div>
-          <h3 className="text-lg font-bold text-foreground mb-1">Upload new version</h3>
-          <p className="text-muted-foreground text-sm">Drag & drop your PDF or DOCX here, or click to browse</p>
-          <p className="text-muted-foreground/60 text-xs mt-4">Max file size: 5MB</p>
+
+          <h3 className={`text-lg font-bold mb-1 transition-colors ${isDragActive ? "text-primary" : "text-foreground"}`}>
+            {isDragActive ? "Drop to upload" : "Upload new resume"}
+          </h3>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+            Drag & drop your PDF or DOCX here, or click to browse
+          </p>
+          <div className="mt-6 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            <span>PDF / DOCX</span>
+            <span className="w-1 h-1 rounded-full bg-border" />
+            <span>Max 5MB</span>
+          </div>
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-2xl p-6 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <FileText className="w-6 h-6" />
+        <div className="bg-surface-1 border border-border/50 rounded-2xl p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <FileText className="w-6 h-6 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm text-foreground truncate max-w-[200px] md:max-w-md">{file.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold text-foreground truncate max-w-[200px] md:max-w-md">{file.name}</p>
-              <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setFile(null); setUploadError(null); }}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-surface-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpload}
+                className="bg-primary text-primary-foreground px-5 py-2 rounded-full text-sm font-bold shadow-primary-glow hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Process File
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => { setFile(null); setUploadError(null); }}
-              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleUpload}
-              className="bg-primary text-primary-foreground px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity"
-            >
-              Process File
-            </button>
           </div>
         </div>
       )}

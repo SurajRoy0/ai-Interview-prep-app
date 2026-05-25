@@ -13,6 +13,8 @@ export async function getDashboardProfile() {
     where: { id: session.user.id },
     select: {
       name: true,
+      email: true,
+      image: true,
       role: true,
       freeInterviewUsed: true,
       _count: {

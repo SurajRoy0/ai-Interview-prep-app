@@ -20,7 +20,9 @@ export function ThemeToggle() {
         className="size-9 text-muted-foreground"
         aria-label="Toggle theme"
         disabled
-      />
+      >
+        <Sun className="size-4.5 opacity-0" strokeWidth={1.75} />
+      </Button>
     );
   }
 

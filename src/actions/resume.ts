@@ -38,7 +38,7 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
     let rawText = ''
     try {
       rawText = await extractTextFromFileBuffer(buffer, file.type)
-    } catch (e) {
+    } catch {
       return failure('Failed to extract text from file. Please ensure it is a valid PDF or DOCX.', 'EXTRACTION_ERROR')
     }
 
@@ -78,7 +78,7 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
   }
 }
 
-export async function getResumeStatusAction(resumeId: string): Promise<ActionResult<{ status: string; parsedData?: any; parseError?: string | null }>> {
+export async function getResumeStatusAction(resumeId: string): Promise<ActionResult<{ status: string; parsedData?: unknown; parseError?: string | null }>> {
   try {
     const session = await getSession()
     if (!session) return failure('Unauthorized', 'UNAUTHORIZED')
