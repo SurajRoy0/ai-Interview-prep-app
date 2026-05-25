@@ -3,7 +3,6 @@
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
 import { createInterviewSchema } from '@repo/validators'
-// import Ably from 'ably' // (Assuming you have Ably installed)
 
 export async function createInterviewAction(formData: unknown) {
     // 2. CHECK AUTH: Get the session directly from the server.
@@ -31,10 +30,7 @@ export async function createInterviewAction(formData: unknown) {
         }
     })
 
-    // 5. REALTIME (ABLY): You can publish to Ably right from the server!
-    // const ably = new Ably.Rest(process.env.ABLY_API_KEY!)
-    // const channel = ably.channels.get(`interview:${newInterview.id}`)
-    // await channel.publish('INTERVIEW_CREATED', { status: 'ready' })
+    // 5. REALTIME: Removed Ably. We will use AI Streaming instead.
 
     // 6. RETURN: Send the result back to the frontend component
     return { success: true, interviewId: newInterview.id }

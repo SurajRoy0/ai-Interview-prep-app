@@ -1,1 +1,0 @@
-export { synthesizeSpeech } from './noop'

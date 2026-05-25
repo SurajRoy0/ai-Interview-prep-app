@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
     '@repo/shared',
     '@repo/validators',
     '@repo/ai',
-    '@repo/audio',
   ],
   serverExternalPackages: [
     '@prisma/client',

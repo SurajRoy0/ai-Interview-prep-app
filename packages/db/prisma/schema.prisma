@@ -470,9 +470,6 @@ model InterviewTurn {
   turnScore   Int? // 0–100
   topicScored String? // which JS topic this answer was scored against
 
-  wasInterruption   Boolean @default(false)
-  interruptedAiText String? @db.Text // what AI was saying when candidate interrupted
-
   // Cost tracking
   tokenUsage Int?
   latencyMs  Int?

@@ -15,9 +15,6 @@ export const submitTurnSchema = z.object({
   answer: z.string().optional().nullable(),
   audioKey: z.string().optional().nullable(),
   
-  wasInterruption: z.boolean().default(false),
-  interruptedAiText: z.string().optional().nullable(),
-  
   latencyMs: z.number().int().optional(),
 })
 

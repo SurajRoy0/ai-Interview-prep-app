@@ -32,7 +32,6 @@ export interface ClientTurn {
   question: string | null;
   answer: string | null;
   audioKey: string | null;
-  wasInterruption: boolean;
   codeSnippetShown: string | null;
   createdAt: string;
 }
