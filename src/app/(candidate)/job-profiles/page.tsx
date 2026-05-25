@@ -40,11 +40,9 @@ export default async function JobProfilesPage({
   const { page } = await searchParams
   const currentPage = Math.max(1, Number(page || 1))
 
-  const { profiles, totalCount } = await getJobProfilesAction({
-    page: currentPage,
-    limit: LIMIT,
-  })
-
+  const result = await getJobProfilesAction({ page: currentPage, limit: LIMIT })
+  const profiles = result.success ? result.data.profiles : []
+  const totalCount = result.success ? result.data.totalCount : 0
   const totalPages = Math.ceil(totalCount / LIMIT)
 
   return (

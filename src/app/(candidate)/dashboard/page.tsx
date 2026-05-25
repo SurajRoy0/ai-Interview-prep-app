@@ -28,10 +28,13 @@ const LEVEL_LABEL: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const [user, { profiles, totalCount }] = await Promise.all([
+  const [user, profilesResult] = await Promise.all([
     getDashboardProfile(),
     getJobProfilesAction({ limit: 4 }),
   ])
+
+  const profiles = profilesResult.success ? profilesResult.data.profiles : []
+  const totalCount = profilesResult.success ? profilesResult.data.totalCount : 0
 
   const name = user.name?.split(" ")[0] ?? "there"
   const interviewCount = user._count.interviews
@@ -107,7 +110,7 @@ export default async function DashboardPage() {
             </div>
             <h3 className="font-bold text-lg leading-tight mb-4">Ready to practice?</h3>
             <Button asChild size="sm" className="bg-background text-foreground hover:bg-background/90 rounded-full gap-1.5 font-semibold text-xs h-8">
-              <Link href="/interview/setup">
+              <Link href="/job-profiles">
                 Start Interview <ArrowRight className="h-3 w-3" />
               </Link>
             </Button>

@@ -392,6 +392,7 @@ model Interview {
   authenticityScore  Int? // cross-validates resume claims vs interview answers
 
   // Aggregated after report generation
+  feedback     String?
   weakTopics   String[]
   strongTopics String[]
 

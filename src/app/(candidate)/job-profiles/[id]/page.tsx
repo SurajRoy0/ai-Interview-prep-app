@@ -27,15 +27,18 @@ export default async function JobProfileDetailPage({
   const { resumePage } = await searchParams
   const currentPage = Math.max(1, Number(resumePage || 1))
 
-  let profile
-  try {
-    profile = await getJobProfileByIdAction(id)
-  } catch {
-    notFound()
-  }
-
   const RESUMES_LIMIT = 5
-  const { resumes, totalCount } = await getJobProfileResumesAction(id, currentPage, RESUMES_LIMIT)
+
+  const [profileResult, resumesResult] = await Promise.all([
+    getJobProfileByIdAction(id),
+    getJobProfileResumesAction(id, currentPage, RESUMES_LIMIT),
+  ])
+
+  if (!profileResult.success) return notFound()
+  const profile = profileResult.data
+
+  const resumes = resumesResult.success ? resumesResult.data.resumes : []
+  const totalCount = resumesResult.success ? resumesResult.data.totalCount : 0
 
   const hasActiveResume = !!profile.activeResumeId
 
@@ -141,7 +144,7 @@ export default async function JobProfileDetailPage({
                       <PaginationContent>
                         <PaginationItem>
                           <PaginationPrevious
-                            href={`/profile/${profile.id}?resumePage=${Math.max(1, currentPage - 1)}`}
+                            href={`/job-profiles/${profile.id}?resumePage=${Math.max(1, currentPage - 1)}`}
                             className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
@@ -152,7 +155,7 @@ export default async function JobProfileDetailPage({
                           return (
                             <PaginationItem key={pNum}>
                               <PaginationLink
-                                href={`/profile/${profile.id}?resumePage=${pNum}`}
+                                href={`/job-profiles/${profile.id}?resumePage=${pNum}`}
                                 isActive={isCurrent}
                               >
                                 {pNum}
@@ -163,7 +166,7 @@ export default async function JobProfileDetailPage({
 
                         <PaginationItem>
                           <PaginationNext
-                            href={`/profile/${profile.id}?resumePage=${Math.min(totalResumePages, currentPage + 1)}`}
+                            href={`/job-profiles/${profile.id}?resumePage=${Math.min(totalResumePages, currentPage + 1)}`}
                             className={currentPage >= totalResumePages ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
@@ -196,7 +199,7 @@ export default async function JobProfileDetailPage({
                 className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl font-bold text-sm h-12 shadow-sm"
               >
                 {hasActiveResume ? (
-                  <Link href="/interview/setup">Start Interview</Link>
+                  <Link href={`/interview/ready/${profile.activeResumeId}`}>Start Interview</Link>
                 ) : (
                   <span>Start Interview</span>
                 )}

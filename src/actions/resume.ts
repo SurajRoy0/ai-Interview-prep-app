@@ -78,29 +78,6 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
   }
 }
 
-export async function getResumeStatusAction(resumeId: string): Promise<ActionResult<{ status: string; parsedData?: unknown; parseError?: string | null }>> {
-  try {
-    const session = await getSession()
-    if (!session) return failure('Unauthorized', 'UNAUTHORIZED')
-
-    const resume = await prisma.resume.findUnique({
-      where: { id: resumeId, jobProfile: { userId: session.user.id } },
-      select: { parseStatus: true, parsedData: true, parseError: true }
-    })
-
-    if (!resume) return failure('Resume not found', 'NOT_FOUND')
-
-    return success({
-      status: resume.parseStatus,
-      parsedData: resume.parseStatus === 'DONE' ? resume.parsedData : undefined,
-      parseError: resume.parseError
-    })
-  } catch (error) {
-    console.error('[getResumeStatusAction]', error)
-    return failure('Failed to get status', 'INTERNAL_ERROR')
-  }
-}
-
 export async function deleteResumeAction(resumeId: string): Promise<ActionResult<{ success: boolean }>> {
   try {
     const session = await getSession()

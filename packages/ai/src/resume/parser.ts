@@ -1,9 +1,10 @@
-import { generateText, Output } from 'ai'
+import { generateObject } from 'ai'
 import { z } from 'zod'
-import { getGeminiClient } from '../client'
-import { ResumeParsedData } from '@repo/shared'
+import { getGeminiModel } from '../client'
+import { buildResumeParseSystemPrompt } from '../prompts/resume'
+import type { ResumeParsedData } from '@repo/shared'
 
-const resumeParseSchema = z.object({
+export const resumeParseSchema = z.object({
   basics: z.object({
     name: z.string().nullable(),
     email: z.string().nullable(),
@@ -36,29 +37,18 @@ const resumeParseSchema = z.object({
   suggestedEcosystem: z.enum(['JAVASCRIPT', 'PYTHON', 'JAVA', 'GO', 'OTHER']).nullable(),
 })
 
+export type ParsedResume = z.infer<typeof resumeParseSchema>
+
 export async function parseResumeWithAI(rawText: string, jobTargetRole: string): Promise<ResumeParsedData> {
-  const model = getGeminiClient()
-  if (!model) {
-    throw new Error('AI client not configured')
-  }
+  const model = getGeminiModel()
 
-  const { output } = await generateText({
+  const { object } = await generateObject({
     model,
-    output: Output.object({
-      schema: resumeParseSchema,
-    }),
-    system: `You are an expert technical recruiter and resume parser.
-You are given the raw, unformatted text extracted from a candidate's resume, and their target role: "${jobTargetRole}".
-Extract all available details into the structured JSON schema.
-
-RULES:
-1. Do not invent information. If something is missing, leave it as null or an empty array.
-2. Group technologies into languages, frameworks, and tools accurately.
-3. For "suggestedEcosystem", guess the primary backend/frontend ecosystem based on the resume skills (JAVASCRIPT, PYTHON, JAVA, GO). If it doesn't fit, use OTHER. If you aren't sure, return null.
-4. Keep experience descriptions concise but include the main accomplishments.`,
+    schema: resumeParseSchema,
+    system: buildResumeParseSystemPrompt(jobTargetRole),
     prompt: `Parse the following resume text:\n\n${rawText}`,
     temperature: 0,
   })
 
-  return output as ResumeParsedData
+  return object satisfies ResumeParsedData
 }

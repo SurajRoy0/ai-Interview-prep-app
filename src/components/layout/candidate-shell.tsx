@@ -184,7 +184,7 @@ export function CandidateShell({ session, children }: Props) {
                   )
                 })}
                 <Button asChild size="sm" className="rounded-full mt-3 gap-2 shadow-primary-glow">
-                  <Link href="/interview/setup">
+                  <Link href="/job-profiles">
                     <Plus className="h-4 w-4" /> New Interview
                   </Link>
                 </Button>

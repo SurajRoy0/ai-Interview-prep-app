@@ -7,9 +7,11 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.79",
-    "@google/generative-ai": "^0.24.1",
+    "@ai-sdk/anthropic": "^3.0.79",
+    "@ai-sdk/google": "^2.0.74",
+    "@ai-sdk/openai": "^2.0.106",
     "@repo/shared": "workspace:*",
-    "openai": "^6.38.0"
+    "ai": "^5.0.192",
+    "zod": "^3.25.28"
   }
 }

@@ -1,66 +1,122 @@
-'use server' // <-- 1. This tells Next.js this code MUST run securely on the server
+'use server'
 
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
 import { createInterviewSchema } from '@repo/validators'
+import { ActionResult, success, failure } from '@/lib/action-result'
+import { reportQueue } from '@/lib/queues'
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
-export async function createInterviewAction(formData: unknown) {
-    // 2. CHECK AUTH: Get the session directly from the server.
-    // We don't trust the client to tell us who they are.
+export async function createInterviewAction(
+  formData: unknown
+): Promise<ActionResult<{ interviewId: string }>> {
+  try {
     const session = await getSession()
-    if (!session?.user?.id) {
-        throw new Error('Unauthorized')
+    if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
+
+    let validatedData: z.infer<typeof createInterviewSchema>
+    try {
+      validatedData = createInterviewSchema.parse(formData)
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return failure('Invalid data', 'VALIDATION_ERROR', err.flatten() as Record<string, unknown>)
+      }
+      throw err
     }
 
-    // 3. VALIDATE DATA: We use your exact schema from the validators package!
-    // If the data is bad, .parse() will throw an error immediately.
-    const validatedData = createInterviewSchema.parse(formData)
-
-    // 4. DATABASE: Fetch resume to get jobProfileId, then create interview
-    const resume = await prisma.resume.findUnique({ where: { id: validatedData.resumeId } })
-    if (!resume) throw new Error("Resume not found")
-
-    const newInterview = await prisma.interview.create({
-        data: {
-            userId: session.user.id,
-            jobProfileId: resume.jobProfileId,
-            resumeId: validatedData.resumeId,
-            type: validatedData.type,
-            status: 'PENDING'
-        }
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        credits: {
+          where: { credits: { gt: 0 } },
+          take: 1,
+        },
+      },
     })
 
-    // 5. REALTIME: Removed Ably. We will use AI Streaming instead.
+    if (!user) return failure('User not found', 'NOT_FOUND')
 
-    // 6. RETURN: Send the result back to the frontend component
-    return { success: true, interviewId: newInterview.id }
+    const hasFreeInterview = !user.freeInterviewUsed
+    const hasPaidCredits = user.credits.length > 0
+
+    if (!hasFreeInterview && !hasPaidCredits) {
+      return failure('Insufficient credits', 'INSUFFICIENT_CREDITS')
+    }
+
+    // Verify resume belongs to this user's job profile
+    const resume = await prisma.resume.findUnique({
+      where: { id: validatedData.resumeId },
+      include: { jobProfile: true },
+    })
+
+    if (!resume) return failure('Resume not found', 'NOT_FOUND')
+    if (resume.jobProfile.userId !== session.user.id) {
+      return failure('Forbidden', 'FORBIDDEN')
+    }
+
+    const newInterview = await prisma.$transaction(async (tx) => {
+      if (hasFreeInterview) {
+        await tx.user.update({
+          where: { id: user.id },
+          data: { freeInterviewUsed: true },
+        })
+      } else {
+        await tx.interviewCredit.update({
+          where: { id: user.credits[0].id },
+          data: { credits: { decrement: 1 } },
+        })
+      }
+
+      return tx.interview.create({
+        data: {
+          userId: session.user.id,
+          jobProfileId: resume.jobProfileId,
+          resumeId: validatedData.resumeId,
+          type: validatedData.type,
+          status: 'PENDING',
+        },
+      })
+    })
+
+    revalidatePath('/dashboard')
+
+    return success({ interviewId: newInterview.id })
+  } catch (error) {
+    console.error('[createInterviewAction]', error)
+    return failure('Failed to create interview', 'INTERNAL_ERROR')
+  }
 }
 
+export async function endInterviewAction(
+  interviewId: string
+): Promise<ActionResult<void>> {
+  try {
+    const session = await getSession()
+    if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
 
-// 'use client'
+    const interview = await prisma.interview.findUnique({
+      where: { id: interviewId, userId: session.user.id },
+    })
 
-// import { createInterviewAction } from '@/actions/interview'
-// import { useState } from 'react'
+    if (!interview) return failure('Interview not found', 'NOT_FOUND')
 
-// export default function StartInterviewButton() {
-//   const [loading, setLoading] = useState(false)
+    if (interview.status === 'COMPLETED') return success(undefined)
 
-//   const handleStart = async () => {
-//     setLoading(true)
-//     try {
-//       // Look how easy this is! Just call the function directly.
-//       const result = await createInterviewAction({ 
-//         resumeId: 'clxyz123', 
-//         type: 'FREE' 
-//       })
-      
-//       console.log('Started interview:', result.interviewId)
-//     } catch (error) {
-//       console.error("Validation failed or unauthorized!", error)
-//     } finally {
-//       setLoading(false)
-//     }
-//   }
+    await prisma.interview.update({
+      where: { id: interviewId },
+      data: { completedAt: new Date() },
+    })
 
-//   return <button onClick={handleStart} disabled={loading}>Start Interview</button>
-// }
+    await reportQueue.add(
+      'generate-report',
+      { interviewId },
+      { jobId: interviewId, removeOnComplete: true, removeOnFail: false }
+    )
+
+    return success(undefined)
+  } catch (error) {
+    console.error('[endInterviewAction]', error)
+    return failure('Failed to end interview', 'INTERNAL_ERROR')
+  }
+}

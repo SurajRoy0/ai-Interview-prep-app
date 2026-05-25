@@ -16,13 +16,16 @@
     "worker:dev": "pnpm --filter @repo/worker dev"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.65",
+    "@ai-sdk/openai": "^2.0.106",
+    "@ai-sdk/react": "^2.0.194",
+    "@deepgram/sdk": "^4.11.3",
     "@hookform/resolvers": "^5.2.2",
+    "@monaco-editor/react": "^4.7.0",
     "@repo/ai": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/shared": "workspace:*",
     "@repo/validators": "workspace:*",
-    "ai": "^6.0.191",
+    "ai": "^5.0.192",
     "better-auth": "^1.6.11",
     "bullmq": "^5.77.2",
     "class-variance-authority": "^0.7.1",
