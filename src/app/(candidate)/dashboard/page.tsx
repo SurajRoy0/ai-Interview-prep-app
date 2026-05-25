@@ -28,9 +28,9 @@ const LEVEL_LABEL: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const [user, profiles] = await Promise.all([
+  const [user, { profiles, totalCount }] = await Promise.all([
     getDashboardProfile(),
-    getJobProfilesAction(),
+    getJobProfilesAction({ limit: 4 }),
   ])
 
   const name = user.name?.split(" ")[0] ?? "there"
@@ -54,9 +54,9 @@ export default async function DashboardPage() {
             {greeting}, {name} 👋
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {profiles.length === 0
+            {totalCount === 0
               ? "Create a job profile to get started."
-              : `You have ${profiles.length} job profile${profiles.length !== 1 ? "s" : ""} set up.`}
+              : `You have ${totalCount} job profile${totalCount !== 1 ? "s" : ""} set up.`}
           </p>
         </div>
 
@@ -121,19 +121,26 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-base font-semibold">Job Profiles</h2>
-            {profiles.length > 0 && (
-              <Badge variant="secondary" className="text-xs">{profiles.length}</Badge>
+            {totalCount > 0 && (
+              <Badge variant="secondary" className="text-xs">{totalCount}</Badge>
             )}
           </div>
-          {/* Dialog trigger — create profile inline */}
-          <CreateProfileDialog>
-            <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-8 text-xs border-border/60">
-              <Plus className="h-3.5 w-3.5" /> New Profile
-            </Button>
-          </CreateProfileDialog>
+          <div className="flex items-center gap-2">
+            {totalCount > 0 && (
+              <Button asChild variant="outline" size="sm" className="rounded-full h-8 text-xs border-border/60">
+                <Link href="/job-profiles">View all</Link>
+              </Button>
+            )}
+            <CreateProfileDialog>
+              <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-8 text-xs border-border/60">
+                <Plus className="h-3.5 w-3.5" /> New Profile
+              </Button>
+            </CreateProfileDialog>
+          </div>
         </div>
 
-        {profiles.length === 0 ? (
+        {totalCount === 0 ? (
+
           /* Empty state */
           <div className="bg-card border border-dashed border-border/60 rounded-2xl p-12 text-center flex flex-col items-center">
             <div className="h-14 w-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">

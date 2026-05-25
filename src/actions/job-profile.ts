@@ -40,25 +40,34 @@ export async function createJobProfileAction(
   }
 }
 
-export async function getJobProfilesAction() {
+export async function getJobProfilesAction(options?: { page?: number; limit?: number }) {
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
 
-  const profiles = await prisma.jobProfile.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      activeResume: true,
-      _count: {
-        select: {
-          interviews: true,
-          resumes: true,
+  const page = options?.page
+  const limit = options?.limit
+  const where = { userId: session.user.id }
+
+  const [profiles, totalCount] = await Promise.all([
+    prisma.jobProfile.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      ...(limit !== undefined ? { take: limit } : {}),
+      ...(page !== undefined && limit !== undefined ? { skip: (page - 1) * limit } : {}),
+      include: {
+        activeResume: true,
+        _count: {
+          select: {
+            interviews: true,
+            resumes: true,
+          }
         }
       }
-    }
-  })
+    }),
+    prisma.jobProfile.count({ where })
+  ])
 
-  return profiles
+  return { profiles, totalCount }
 }
 
 export async function getJobProfileByIdAction(id: string) {
@@ -69,9 +78,6 @@ export async function getJobProfileByIdAction(id: string) {
     where: { id, userId: session.user.id },
     include: {
       activeResume: true,
-      resumes: {
-        orderBy: { createdAt: 'desc' }
-      },
       interviews: {
         orderBy: { createdAt: 'desc' }
       }
@@ -81,3 +87,29 @@ export async function getJobProfileByIdAction(id: string) {
   if (!profile) throw new Error('Job profile not found')
   return profile
 }
+
+export async function getJobProfileResumesAction(jobProfileId: string, page: number = 1, limit: number = 5) {
+  const session = await getSession()
+  if (!session) throw new Error('Unauthorized')
+
+  const skip = (page - 1) * limit
+  const where = {
+    jobProfileId,
+    jobProfile: {
+      userId: session.user.id
+    }
+  }
+
+  const [resumes, totalCount] = await Promise.all([
+    prisma.resume.findMany({
+      where,
+      orderBy: { version: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.resume.count({ where })
+  ])
+
+  return { resumes, totalCount }
+}
+

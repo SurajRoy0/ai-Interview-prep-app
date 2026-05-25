@@ -6,8 +6,8 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import {
-  LayoutDashboard, Mic2, CreditCard, Settings2,
-  Plus, ChevronDown, User, Menu
+  LayoutDashboard, CreditCard, Settings2,
+  Plus, ChevronDown, User, Menu, Briefcase
 } from "lucide-react"
 import type { Session } from "@/lib/auth"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -36,7 +36,7 @@ import { ThemeToggle } from "../shared/theme-toggle"
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/interview/history", label: "Interviews", icon: Mic2 },
+  { href: "/job-profiles", label: "Job profiles", icon: Briefcase },
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings2 },
 ]

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/accordion"
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog"
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ResumeCard({ resume, isActive, hasInterviews }: { resume: any, isActive: boolean, hasInterviews: boolean }) {
   const [isExpanded, setIsExpanded] = useState(isActive)
   const [isProcessing, setIsProcessing] = useState(false)

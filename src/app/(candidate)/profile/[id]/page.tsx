@@ -1,15 +1,32 @@
-import { getJobProfileByIdAction } from "@/actions/job-profile"
+import { getJobProfileByIdAction, getJobProfileResumesAction } from "@/actions/job-profile"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Calendar, CheckCircle2, FileText, Activity, ArrowRight, Star } from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle2, FileText, Activity, Star } from "lucide-react"
 import { ResumeUploader } from "@/components/resume/resume-uploader"
 import { ResumeCard } from "@/components/resume/resume-card"
 import { ClientRefreshPoller } from "@/components/resume/client-refresh-poller"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
-export default async function JobProfileDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function JobProfileDetailPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ resumePage?: string }>
+}) {
   const { id } = await params
+  const { resumePage } = await searchParams
+  const currentPage = Math.max(1, Number(resumePage || 1))
+
   let profile
   try {
     profile = await getJobProfileByIdAction(id)
@@ -17,10 +34,12 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
     notFound()
   }
 
+  const RESUMES_LIMIT = 5
+  const { resumes, totalCount } = await getJobProfileResumesAction(id, currentPage, RESUMES_LIMIT)
+
   const hasActiveResume = !!profile.activeResumeId
 
-  // Sort resumes by version descending just in case createdAt was somehow out of order
-  const sortedResumes = [...profile.resumes].sort((a, b) => b.version - a.version)
+  const sortedResumes = resumes
 
   const isProcessing = sortedResumes.some(r => r.parseStatus === "PENDING" || r.parseStatus === "PROCESSING")
 
@@ -30,6 +49,8 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
     const current = resumeIdToInterviewCount.get(interview.resumeId) || 0
     resumeIdToInterviewCount.set(interview.resumeId, current + 1)
   })
+
+  const totalResumePages = Math.ceil(totalCount / RESUMES_LIMIT)
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500">
@@ -61,22 +82,6 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
               </Badge>
             </div>
           </div>
-        </div>
-
-        {/* Header CTA for desktop */}
-        <div className="hidden md:block">
-          <Button
-            asChild={hasActiveResume}
-            disabled={!hasActiveResume}
-            size="sm"
-            className={`rounded-full px-6 gap-2 shadow-sm ${hasActiveResume ? "shadow-primary-glow" : ""}`}
-          >
-            {hasActiveResume ? (
-              <Link href="/interview/setup">Start Interview <ArrowRight className="w-4 h-4" /></Link>
-            ) : (
-              <span>Upload Resume First</span>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -118,19 +123,58 @@ export default async function JobProfileDetailPage({ params }: { params: Promise
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {sortedResumes.map(resume => (
-                    <ResumeCard
-                      key={resume.id}
-                      resume={resume}
-                      isActive={resume.id === profile.activeResumeId}
-                      hasInterviews={(resumeIdToInterviewCount.get(resume.id) || 0) > 0}
-                    />
-                  ))}
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {sortedResumes.map(resume => (
+                      <ResumeCard
+                        key={resume.id}
+                        resume={resume}
+                        isActive={resume.id === profile.activeResumeId}
+                        hasInterviews={(resumeIdToInterviewCount.get(resume.id) || 0) > 0}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Resume Pagination controls */}
+                  {totalResumePages > 1 && (
+                    <Pagination className="pt-4">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href={`/profile/${profile.id}?resumePage=${Math.max(1, currentPage - 1)}`}
+                            className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+
+                        {Array.from({ length: totalResumePages }).map((_, idx) => {
+                          const pNum = idx + 1
+                          const isCurrent = pNum === currentPage
+                          return (
+                            <PaginationItem key={pNum}>
+                              <PaginationLink
+                                href={`/profile/${profile.id}?resumePage=${pNum}`}
+                                isActive={isCurrent}
+                              >
+                                {pNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          )
+                        })}
+
+                        <PaginationItem>
+                          <PaginationNext
+                            href={`/profile/${profile.id}?resumePage=${Math.min(totalResumePages, currentPage + 1)}`}
+                            className={currentPage >= totalResumePages ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
                 </div>
               )}
             </div>
           </section>
+
 
         </div>
 
