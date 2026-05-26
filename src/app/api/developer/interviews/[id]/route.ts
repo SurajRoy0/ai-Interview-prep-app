@@ -9,6 +9,11 @@ import { prisma } from '@repo/db'
  * interview metadata, plan, all turns, activities, report, analytics,
  * improvement suggestions, the frozen resume snapshot, and job profile.
  *
+ * DELETE /api/developer/interviews/[id]
+ *
+ * Permanently deletes an interview and all cascade-owned data
+ * (turns, activities, report, analytics, suggestions). Does not delete the resume.
+ *
  * Development only.
  */
 export async function GET(
@@ -186,6 +191,60 @@ export async function GET(
         hasReport: interview.report != null,
         hasAnalytics: interview.analytics != null,
         suggestionCount: interview.suggestions.length,
+      },
+    },
+  })
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const guard = devOnlyGuard()
+  if (guard) return guard
+
+  const { id } = await params
+
+  console.log('id', id)
+
+  const interview = await prisma.interview.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      jobProfileId: true,
+      report: { select: { id: true } },
+      analytics: { select: { id: true } },
+      _count: {
+        select: {
+          turns: true,
+          activities: true,
+          suggestions: true,
+        },
+      },
+    },
+  })
+
+  if (!interview) {
+    return NextResponse.json({ success: false, error: 'Interview not found' }, { status: 404 })
+  }
+
+  await prisma.interview.delete({ where: { id } })
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      deletedInterviewId: interview.id,
+      userId: interview.userId,
+      jobProfileId: interview.jobProfileId,
+      status: interview.status,
+      deletedCounts: {
+        turns: interview._count.turns,
+        activities: interview._count.activities,
+        suggestions: interview._count.suggestions,
+        report: interview.report ? 1 : 0,
+        analytics: interview.analytics ? 1 : 0,
       },
     },
   })

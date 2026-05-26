@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   '/api/auth',
   '/api/seed',
   '/api/reset',
+  '/api/developer', // devOnlyGuard on each route — no session required
 ]
 
 // Paths that require ADMIN role — checked with startsWith
