@@ -1,12 +1,8 @@
 import { Worker } from 'bullmq'
+import { QUEUE_NAMES } from '@repo/shared'
 import { connection } from './queues/client'
 import { processResumeJob } from './processors/resume.processor'
 import { processReportJob } from './processors/report.processor'
-
-const QUEUE_NAMES = {
-  RESUME_PROCESSING: 'resume-processing',
-  INTERVIEW_REPORT: 'interview-report',
-} as const
 
 console.log('Starting FoxTel Background Worker...')
 console.log(`Connected to Redis at ${process.env.REDIS_URL || 'redis://localhost:6379'}`)
@@ -23,8 +19,16 @@ const reportWorker = new Worker(
   { connection }
 )
 
+resumeWorker.on('completed', (job) => {
+  console.log(`[ResumeWorker] Job ${job.id} completed successfully`)
+})
+
 resumeWorker.on('failed', (job, err) => {
   console.error(`[ResumeWorker] Job ${job?.id} failed:`, err.message)
+})
+
+reportWorker.on('completed', (job) => {
+  console.log(`[ReportWorker] Job ${job.id} completed successfully`)
 })
 
 reportWorker.on('failed', (job, err) => {

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { readStreamableValue } from '@ai-sdk/rsc'
+import { parseAITurnResponse } from '@repo/ai/browser'
 import { useInterviewStore } from '@/store/interview-store'
 import { submitTurnAction, recoverInterviewAction } from '@/actions/interview'
 import { ActivityPanel } from '@/components/interview/ActivityPanel'
@@ -13,26 +14,22 @@ import { LiveTranscript } from '@/components/interview/LiveTranscript'
 export function ActiveInterview({ interviewId }: { interviewId: string }) {
   const store = useInterviewStore()
 
-  const setInterviewId = useInterviewStore(s => s.setInterviewId)
-  const turnsLength = useInterviewStore(s => s.turns.length)
-  const rebuildFromRecovery = useInterviewStore(s => s.rebuildFromRecovery)
-
-  // On mount, recover interview state if refreshed
   useEffect(() => {
-    setInterviewId(interviewId)
+    store.setInterviewId(interviewId)
 
-    // We only recover if we haven't loaded turns yet
-    if (turnsLength === 0) {
-      recoverInterviewAction(interviewId).then((res) => {
-        if (res.success && res.data) {
-          rebuildFromRecovery(res.data)
-        }
-      })
+    recoverInterviewAction(interviewId).then((res) => {
+      if (res.success && res.data) {
+        store.rebuildFromRecovery(res.data)
+      }
+    })
+
+    return () => {
+      store.reset()
     }
-  }, [interviewId, setInterviewId, rebuildFromRecovery]) // Remove turnsLength to prevent re-fetching if it stays 0
+  }, [interviewId])
 
   async function handleSubmit(answer: string, inputMode: string) {
-    store.addTurn({ turnIndex: store.currentTurnIndex, role: 'user', content: answer, inputMode })
+    store.addUserTurn(answer, inputMode)
     store.setPhase('ai_typing')
     store.setStreamingText('')
 
@@ -44,17 +41,16 @@ export function ActiveInterview({ interviewId }: { interviewId: string }) {
     }
 
     if (result.data.isCompleted) {
+      store.setPhase('completed')
       window.location.href = `/interview/${interviewId}`
       return
     }
 
     if (result.data.activityNext) {
-      // Trigger activity flow
       store.setPhase('activity_active')
       return
     }
 
-    // Stream tokens
     let fullText = ''
     if (result.data.stream) {
       for await (const delta of readStreamableValue(result.data.stream)) {
@@ -65,19 +61,9 @@ export function ActiveInterview({ interviewId }: { interviewId: string }) {
       }
     }
 
-    try {
-      let jsonStr = fullText.trim()
-      if (jsonStr.startsWith('\`\`\`json')) {
-        jsonStr = jsonStr.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim()
-      } else if (jsonStr.startsWith('\`\`\`')) {
-        jsonStr = jsonStr.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim()
-      }
-      const parsed = JSON.parse(jsonStr)
-      store.finalizeAITurn(parsed.question || "Could you elaborate?", parsed.suggestedInputMode || "VOICE")
-    } catch {
-      store.finalizeAITurn("Could you elaborate?", "VOICE")
-    }
-
+    const parsed = parseAITurnResponse(fullText)
+    store.finalizeAITurn(parsed.question ?? 'Could you elaborate?', parsed.suggestedInputMode ?? 'VOICE')
+    store.setTurnMeta(store.currentTurnIndex + 1, store.totalTurns)
     store.setPhase('waiting_input')
   }
 
@@ -92,7 +78,12 @@ export function ActiveInterview({ interviewId }: { interviewId: string }) {
           <LiveTranscript />
         </div>
 
-        {store.phase === 'activity_active' && <ActivityPanel interviewId={interviewId} />}
+        {store.phase === 'activity_active' && (
+          <ActivityPanel
+            interviewId={interviewId}
+            onActivityComplete={(answer) => handleSubmit(answer, 'CODE_EDITOR')}
+          />
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,3 @@
-import { InterviewPlan } from '@repo/shared'
-
 export function buildActivityPrompt(ctx: {
   activityType: string
   targetRole: string

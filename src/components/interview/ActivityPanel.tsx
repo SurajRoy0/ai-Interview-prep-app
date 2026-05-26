@@ -3,11 +3,16 @@
 import { useInterviewStore } from '@/store/interview-store'
 import { CodeEditor } from '@/components/interview/CodeEditor'
 import { Button } from '@/components/ui/button'
-import { submitActivityAction as submitAct, startActivityAction as startAct } from '@/actions/activity'
+import { submitActivityAction, startActivityAction } from '@/actions/activity'
 import { useState, useEffect } from 'react'
 import { Loader2 } from 'lucide-react'
 
-export function ActivityPanel({ interviewId }: { interviewId: string }) {
+interface ActivityPanelProps {
+  interviewId: string
+  onActivityComplete: (answer: string) => void
+}
+
+export function ActivityPanel({ interviewId, onActivityComplete }: ActivityPanelProps) {
   const { currentActivity, setActivity, codeEditorContent, setPhase, phase } = useInterviewStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -15,7 +20,7 @@ export function ActivityPanel({ interviewId }: { interviewId: string }) {
   useEffect(() => {
     if (phase === 'activity_active' && !currentActivity && !loading) {
       setLoading(true)
-      startAct(interviewId).then(res => {
+      startActivityAction(interviewId).then((res) => {
         setLoading(false)
         if (res.success && res.data?.activity) {
           setActivity(res.data.activity)
@@ -39,16 +44,17 @@ export function ActivityPanel({ interviewId }: { interviewId: string }) {
 
   const handleSubmit = async () => {
     setLoading(true)
-    const result = await submitAct(interviewId, currentActivity.requiresCodeEditor ? codeEditorContent : 'Completed conceptually')
+    const answer = currentActivity.requiresCodeEditor
+      ? codeEditorContent
+      : 'Completed conceptually'
+
+    const result = await submitActivityAction(interviewId, answer)
     setLoading(false)
+
     if (result.success) {
       setActivity(null)
-      // Advance to next turn / processing state
-      // This is slightly simplified. We'd tell the AI that the activity is complete and fetch next question.
-      // For now, let's just trigger a submission so the AI parses it.
-      setPhase('processing')
-      // Ideally we would trigger `submitTurnAction` here. Since ActiveInterview controls that, we might want to pass a callback.
-      // In a real implementation we would lift the submit logic up or use the store to trigger a re-fetch.
+      // Hand off to ActiveInterview so the next AI question is fetched
+      onActivityComplete(answer)
     } else {
       setError(result.error?.message ?? 'Failed to submit')
     }
@@ -62,7 +68,7 @@ export function ActivityPanel({ interviewId }: { interviewId: string }) {
           {currentActivity.prompt}
         </p>
       </div>
-      
+
       <div className="flex-1 p-4 bg-[#1d1f21]">
         {currentActivity.requiresCodeEditor ? (
           <CodeEditor />

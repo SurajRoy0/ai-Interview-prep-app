@@ -1,9 +1,7 @@
 import { Queue } from 'bullmq'
+import { QUEUE_NAMES } from '@repo/shared'
 
-export const QUEUE_NAMES = {
-  RESUME_PROCESSING: 'resume-processing',
-  INTERVIEW_REPORT: 'interview-report',
-} as const
+export { QUEUE_NAMES }
 
 const connection = {
   url: process.env.REDIS_URL || 'redis://localhost:6379',

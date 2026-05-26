@@ -1,52 +1,20 @@
-export type InterviewPhase = 'listening' | 'ai_speaking' | 'activity_active' | 'processing';
-export type InterviewStatus = 'pending' | 'active' | 'completed' | 'failed' | 'cancelled';
-
-export interface CurrentActivityState {
-  id: string;
-  type: string;
-  title: string | null;
-  prompt: string;
-  codeSnippet: string | null;
-}
-
-export interface AblyStatePayload {
-  version: number;
-  status: InterviewStatus;
-  phase: InterviewPhase;
-
-  currentQuestion: string | null;
-  audioKey: string | null;
-
-  activitiesCompleted: number;
-  activitiesPlanned: number;
-  currentTurnIndex: number;
-  totalQuestions: number;
-
-  currentActivity: CurrentActivityState | null;
-}
-
-export interface ClientTurn {
-  id: string;
-  turnIndex: number;
-  role: 'AI' | 'USER';
-  question: string | null;
-  answer: string | null;
-  audioKey: string | null;
-  codeSnippetShown: string | null;
-  createdAt: string;
-}
+import type {
+  QuestionCategory,
+  PsychologicalIntent,
+  ActivityType,
+} from '../constants/interview-enums'
 
 export type InterviewPlan = {
-  targetRole: string;
-  ecosystem: string;
-  claimsToValidate: string[];
+  targetRole: string
+  ecosystem: string
+  claimsToValidate: string[]
   activities: {
-    insertAfterTurn: number;
-    type: string;
-  }[];
+    insertAfterTurn: number
+    type: ActivityType
+  }[]
   turns: {
-    category: string;
-    psychologicalIntent: string;
-    notes?: string;
-  }[];
+    category: QuestionCategory
+    psychologicalIntent: PsychologicalIntent
+    notes?: string
+  }[]
 }

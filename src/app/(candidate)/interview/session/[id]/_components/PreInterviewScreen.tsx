@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { startInterviewAction } from '@/actions/interview'
+import { readStreamableValue } from '@ai-sdk/rsc'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Loader2, Mic, Settings } from 'lucide-react'
@@ -16,24 +17,31 @@ export function PreInterviewScreen({ interviewId }: { interviewId: string }) {
     setStarting(true)
     setError(null)
 
-    // Request mic permission
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
-      setError("Microphone access is required to start the interview.")
+      setError('Microphone access is required to start the interview.')
       setStarting(false)
       return
     }
 
     const result = await startInterviewAction(interviewId)
-    
-    if (!result.success) {
-      setError(result.error?.message ?? "Failed to start interview.")
+
+    if (!result.success || !result.data) {
+      setError(result.error?.message ?? 'Failed to start interview.')
       setStarting(false)
       return
     }
 
-    // Refresh the page to load the ActiveInterview screen since status is now ACTIVE
+    // Drain the stream fully before refreshing so the DB transaction
+    // (credit deduction + first InterviewTurn creation) has completed.
+    if (result.data.stream) {
+      for await (const _ of readStreamableValue(result.data.stream)) {
+        // We intentionally discard the tokens here — the ActiveInterview
+        // screen will replay them via recoverInterviewAction on load.
+      }
+    }
+
     router.refresh()
   }
 
@@ -52,11 +60,11 @@ export function PreInterviewScreen({ interviewId }: { interviewId: string }) {
             <div>
               <h3 className="font-medium">Voice Mode</h3>
               <p className="text-sm text-muted-foreground">
-                We will request microphone access. Speak naturally, and wait for the AI to finish before replying.
+                Hold the mic button or press and hold <kbd className="px-1 py-0.5 bg-muted border rounded text-xs">Tab</kbd> to speak. Release to submit your answer.
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-start space-x-4 p-4 bg-secondary/50 rounded-lg">
             <Settings className="w-6 h-6 text-primary mt-1" />
             <div>
@@ -72,10 +80,10 @@ export function PreInterviewScreen({ interviewId }: { interviewId: string }) {
           )}
         </CardContent>
         <CardFooter>
-          <Button 
-            className="w-full" 
-            size="lg" 
-            onClick={handleStart} 
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={handleStart}
             disabled={starting}
           >
             {starting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}

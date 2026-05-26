@@ -1,6 +1,6 @@
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { getGeminiModel } from '../client'
+import { AI_MODELS, getOpenAiModel } from '../client'
 import { buildResumeParseSystemPrompt } from '../prompts/resume'
 import type { ResumeParsedData } from '@repo/shared'
 
@@ -40,7 +40,7 @@ export const resumeParseSchema = z.object({
 export type ParsedResume = z.infer<typeof resumeParseSchema>
 
 export async function parseResumeWithAI(rawText: string, jobTargetRole: string): Promise<ResumeParsedData> {
-  const model = getGeminiModel()
+  const model = getOpenAiModel(AI_MODELS.OPENAI.MINI)
 
   const { object } = await generateObject({
     model,

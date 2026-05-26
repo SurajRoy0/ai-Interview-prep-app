@@ -1,5 +1,5 @@
 import { generateObject } from 'ai'
-import { getGeminiModel, AI_MODELS } from '../client'
+import { getOpenAiModel, AI_MODELS } from '../client'
 import { buildReportPrompt } from '../prompts/report'
 import { z } from 'zod'
 import { InterviewPlan } from '@repo/shared'
@@ -21,7 +21,7 @@ export async function generateInterviewReport(ctx: {
   interviewPlan: InterviewPlan
 }): Promise<GeneratedReport> {
   const { object } = await generateObject({
-    model: getGeminiModel(AI_MODELS.GEMINI.PRO),
+    model: getOpenAiModel(AI_MODELS.GEMINI.PRO),
     schema: ReportSchema,
     prompt: buildReportPrompt(ctx),
     temperature: 0.2

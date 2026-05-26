@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 export const createInterviewSchema = z.object({
-  jobProfileId: z.string().min(1, "Job profile ID is required"),
-  resumeId: z.string().min(1, "Resume ID is required"),
+  jobProfileId: z.string().min(1, 'Job profile ID is required'),
+  resumeId: z.string().min(1, 'Resume ID is required'),
   type: z.enum(['MOCK', 'TECHNICAL', 'HR', 'SYSTEM_DESIGN', 'BEHAVIORAL', 'FULL']),
   mode: z.enum(['TEXT', 'VOICE', 'MIXED']),
   interviewFormat: z.string().min(1),
@@ -10,19 +10,22 @@ export const createInterviewSchema = z.object({
 
 export const submitTurnSchema = z.object({
   interviewId: z.string().min(1),
-  turnIndex: z.number().int().min(0),
-  
-  answer: z.string().optional().nullable(),
-  audioKey: z.string().optional().nullable(),
-  
-  latencyMs: z.number().int().optional(),
+  answer: z.string(),
+  inputMode: z.string(),
 })
 
-export const completeActivitySchema = z.object({
-  interviewId: z.string().min(1),
-  activityIndex: z.number().int().min(0),
-  
-  candidateCodeAnswer: z.string().optional().nullable(),
-  candidateVoiceAnswer: z.string().optional().nullable(),
-  candidateTextAnswer: z.string().optional().nullable(),
+export type SubmitTurnInput = z.infer<typeof submitTurnSchema>
+
+export const activityResponseSchema = z.object({
+  title: z.string(),
+  prompt: z.string(),
+  codeSnippet: z.string().optional(),
+  requiresCodeEditor: z.boolean(),
+  codeEditable: z.boolean(),
+  requiresTextInput: z.boolean(),
 })
+
+export type ActivityResponseData = z.infer<typeof activityResponseSchema> & {
+  activityId: string
+  type: string
+}

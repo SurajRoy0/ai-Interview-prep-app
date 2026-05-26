@@ -1,4 +1,4 @@
-import { CoreMessage } from 'ai'
+import { ModelMessage } from 'ai'
 
 export interface TurnData {
   role: 'AI' | 'USER'
@@ -6,8 +6,8 @@ export interface TurnData {
   answer?: string | null
 }
 
-export function buildConversationHistory(turns: TurnData[], newAnswer: string): CoreMessage[] {
-  const messages: CoreMessage[] = []
+export function buildConversationHistory(turns: TurnData[], newAnswer: string): ModelMessage[] {
+  const messages: ModelMessage[] = []
 
   for (const turn of turns) {
     if (turn.role === 'AI' && turn.question) {

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import {
   LayoutDashboard, CreditCard, Settings2,
-  Plus, ChevronDown, User, Menu, Briefcase
+  Plus, ChevronDown, User, Menu, Briefcase, History
 } from "lucide-react"
 import type { Session } from "@/lib/auth"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -36,7 +36,8 @@ import { ThemeToggle } from "../shared/theme-toggle"
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/job-profiles", label: "Job profiles", icon: Briefcase },
+  { href: "/job-profiles", label: "Job Profiles", icon: Briefcase },
+  { href: "/interview/history", label: "History", icon: History },
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings2 },
 ]

@@ -6,21 +6,12 @@ import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
 import { ActionResult, success, failure } from '@/lib/action-result'
 import { generateObject } from 'ai'
-import { getGeminiModel, AI_MODELS, buildActivityPrompt } from '@repo/ai'
-import { z } from 'zod'
+import { getOpenAiModel, AI_MODELS, buildActivityPrompt } from '@repo/ai'
+import { activityResponseSchema, type ActivityResponseData } from '@repo/validators'
 
-const ActivitySchema = z.object({
-  title: z.string(),
-  prompt: z.string(),
-  codeSnippet: z.string().optional(),
-  requiresCodeEditor: z.boolean(),
-  codeEditable: z.boolean(),
-  requiresTextInput: z.boolean()
-})
+export type { ActivityResponseData }
 
-export type ActivityResponse = z.infer<typeof ActivitySchema> & { activityId: string; type: string }
-
-export async function startActivityAction(interviewId: string): Promise<ActionResult<{ activity: ActivityResponse }>> {
+export async function startActivityAction(interviewId: string): Promise<ActionResult<{ activity: ActivityResponseData }>> {
   const session = await getSession()
   if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
 
@@ -45,8 +36,8 @@ export async function startActivityAction(interviewId: string): Promise<ActionRe
     const candidateHistory = interview.turns.map(t => `${t.role}: ${t.role === 'AI' ? t.question : t.answer}`).join('\n')
 
     const { object } = await generateObject({
-      model: getGeminiModel(AI_MODELS.GEMINI.FLASH),
-      schema: ActivitySchema,
+      model: getOpenAiModel(AI_MODELS.OPENAI.MINI),
+      schema: activityResponseSchema,
       prompt: buildActivityPrompt({
         activityType: nextActivityDef.type,
         targetRole: interview.resume.jobProfile.targetRole,
@@ -55,12 +46,12 @@ export async function startActivityAction(interviewId: string): Promise<ActionRe
       })
     })
 
-    return success({ 
-      activity: { 
-        ...object, 
-        activityId: nextActivityDef.type, 
-        type: nextActivityDef.type 
-      } 
+    return success({
+      activity: {
+        ...object,
+        activityId: nextActivityDef.type,
+        type: nextActivityDef.type
+      }
     })
   } catch (err) {
     console.error(err)
@@ -77,21 +68,27 @@ export async function submitActivityAction(interviewId: string, answer: string):
   })
 
   if (!interview) return failure('Not found', 'NOT_FOUND')
+  if (interview.userId !== session.user.id) return failure('Forbidden', 'FORBIDDEN')
 
-  await prisma.interviewTurn.create({
-    data: {
-      interviewId,
-      turnIndex: interview.currentTurnIndex + 1,
-      role: 'USER',
-      answer,
-      inputMode: 'CODE_EDITOR', // or whatever mode is appropriate
-    }
-  })
+  try {
+    await prisma.interviewTurn.create({
+      data: {
+        interviewId,
+        turnIndex: interview.currentTurnIndex + 1,
+        role: 'USER',
+        answer,
+        inputMode: 'CODE_EDITOR',
+      }
+    })
 
-  await prisma.interview.update({
-    where: { id: interviewId },
-    data: { currentTurnIndex: interview.currentTurnIndex + 1 }
-  })
+    await prisma.interview.update({
+      where: { id: interviewId },
+      data: { currentTurnIndex: interview.currentTurnIndex + 1 }
+    })
 
-  return success(undefined)
+    return success(undefined)
+  } catch (err) {
+    console.error('[submitActivityAction]', err)
+    return failure('Failed to submit activity', 'INTERNAL_ERROR')
+  }
 }

@@ -9,7 +9,6 @@ export type InterviewPhase =
   | 'activity_active'
   | 'completed'
   | 'failed'
-  | 'recovering'
 
 export interface TurnDisplay {
   turnIndex: number
@@ -32,6 +31,7 @@ export interface ActivityState {
 export interface RecoveryState {
   status: string
   currentTurnIndex: number
+  totalTurns: number
   turns: TurnDisplay[]
 }
 
@@ -39,14 +39,11 @@ interface InterviewStore {
   interviewId: string | null
   phase: InterviewPhase
 
-  currentQuestion: string
   streamingText: string
   currentInputMode: string
 
   currentTurnIndex: number
   totalTurns: number
-  questionNumber: number
-  isActivityNext: boolean
 
   turns: TurnDisplay[]
 
@@ -60,7 +57,9 @@ interface InterviewStore {
 
   setPhase: (p: InterviewPhase) => void
   setStreamingText: (t: string) => void
+  setTurnMeta: (currentTurnIndex: number, totalTurns: number) => void
   finalizeAITurn: (question: string, inputMode: string) => void
+  addUserTurn: (content: string, inputMode: string) => void
   addTurn: (t: TurnDisplay) => void
   setLiveTranscript: (t: string) => void
   setActivity: (a: ActivityState | null) => void
@@ -72,18 +71,15 @@ interface InterviewStore {
   setInterviewId: (id: string) => void
 }
 
-export const useInterviewStore = create<InterviewStore>((set) => ({
+export const useInterviewStore = create<InterviewStore>((set, get) => ({
   interviewId: null,
   phase: 'idle',
 
-  currentQuestion: '',
   streamingText: '',
   currentInputMode: 'VOICE',
 
   currentTurnIndex: 0,
   totalTurns: 0,
-  questionNumber: 1,
-  isActivityNext: false,
 
   turns: [],
 
@@ -97,27 +93,49 @@ export const useInterviewStore = create<InterviewStore>((set) => ({
 
   setPhase: (phase) => set({ phase }),
   setStreamingText: (streamingText) => set({ streamingText }),
+
+  setTurnMeta: (currentTurnIndex, totalTurns) => set({ currentTurnIndex, totalTurns }),
+
   finalizeAITurn: (question, inputMode) => set((state) => ({
-    currentQuestion: question,
     currentInputMode: inputMode,
     turns: [...state.turns, { turnIndex: state.currentTurnIndex, role: 'ai', content: question, inputMode }],
     streamingText: '',
   })),
+
+  addUserTurn: (content, inputMode) => set((state) => ({
+    turns: [...state.turns, { turnIndex: state.currentTurnIndex, role: 'user', content, inputMode }],
+    currentTurnIndex: state.currentTurnIndex + 1,
+  })),
+
   addTurn: (t) => set((state) => ({ turns: [...state.turns, t] })),
+
   setLiveTranscript: (liveTranscript) => set({ liveTranscript }),
   setActivity: (currentActivity) => set({ currentActivity }),
   setTextInputContent: (textInputContent) => set({ textInputContent }),
   setCodeEditorContent: (codeEditorContent) => set({ codeEditorContent }),
   tickTimer: () => set((state) => ({ elapsedSeconds: state.elapsedSeconds + 1 })),
+
   rebuildFromRecovery: (data) => set({
     phase: data.status === 'COMPLETED' ? 'completed' : data.status === 'FAILED' ? 'failed' : 'waiting_input',
     currentTurnIndex: data.currentTurnIndex,
+    totalTurns: data.totalTurns,
     turns: data.turns,
   }),
+
   reset: () => set({
-    interviewId: null, phase: 'idle', currentQuestion: '', streamingText: '', currentInputMode: 'VOICE',
-    currentTurnIndex: 0, totalTurns: 0, questionNumber: 1, isActivityNext: false, turns: [],
-    liveTranscript: '', textInputContent: '', codeEditorContent: '', currentActivity: null, elapsedSeconds: 0,
+    interviewId: null,
+    phase: 'idle',
+    streamingText: '',
+    currentInputMode: 'VOICE',
+    currentTurnIndex: 0,
+    totalTurns: 0,
+    turns: [],
+    liveTranscript: '',
+    textInputContent: '',
+    codeEditorContent: '',
+    currentActivity: null,
+    elapsedSeconds: 0,
   }),
+
   setInterviewId: (interviewId) => set({ interviewId }),
 }))

@@ -2,10 +2,18 @@
 
 import { prisma, QuestionCategory, QuestionDifficulty, PsychologicalIntent, InputMode } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
-import { createInterviewSchema } from '@repo/validators'
+import { createInterviewSchema, submitTurnSchema } from '@repo/validators'
 import { ActionResult, success, failure } from '@/lib/action-result'
 import { z } from 'zod'
-import { generateInterviewPlan, getGeminiModel, AI_MODELS, buildInterviewSystemPrompt, buildConversationHistory, parseAITurnResponse } from '@repo/ai'
+import {
+  generateInterviewPlan,
+  getOpenAiModel,
+  AI_MODELS,
+  buildInterviewSystemPrompt,
+  buildConversationHistory,
+  parseAITurnResponse,
+  normalizeAITurnForDb,
+} from '@repo/ai'
 import type { ResumeParsedData, InterviewPlan } from '@repo/shared'
 import { streamText } from 'ai'
 import { createStreamableValue } from '@ai-sdk/rsc'
@@ -103,7 +111,7 @@ export async function startInterviewAction(interviewId: string) {
       try {
         const plan = interview.interviewPlan as InterviewPlan | null
         const { textStream } = await streamText({
-          model: getGeminiModel(AI_MODELS.GEMINI.FLASH),
+          model: getOpenAiModel(AI_MODELS.OPENAI.MINI),
           system: buildInterviewSystemPrompt({
             plan: plan!,
             parsedData: interview.resume.parsedData as unknown as ResumeParsedData,
@@ -119,9 +127,9 @@ export async function startInterviewAction(interviewId: string) {
           stream.update(delta)
         }
 
-        stream.done()
-
-        const parsed = parseAITurnResponse(fullText)
+        const parsed = normalizeAITurnForDb(
+          parseAITurnResponse(fullText) as Record<string, unknown>
+        )
 
         // Consume credit and set ACTIVE
         await prisma.$transaction(async (tx) => {
@@ -152,17 +160,18 @@ export async function startInterviewAction(interviewId: string) {
               turnIndex: 1,
               role: 'AI',
               question: parsed.question,
-              questionCategory: parsed.category as QuestionCategory,
-              questionDifficulty: parsed.difficulty as QuestionDifficulty,
+              questionCategory: parsed.questionCategory as QuestionCategory,
+              questionDifficulty: parsed.questionDifficulty as QuestionDifficulty,
               psychologicalIntent: parsed.psychologicalIntent as PsychologicalIntent,
               targetSkills: parsed.targetSkills,
-              inputMode: parsed.suggestedInputMode as InputMode,
+              inputMode: parsed.inputMode as InputMode,
               isFollowUp: parsed.isFollowUp,
               followUpReason: parsed.followUpReason,
             },
           })
         })
 
+        stream.done()
       } catch (err) {
         console.error(err)
         stream.error(err)
@@ -173,16 +182,10 @@ export async function startInterviewAction(interviewId: string) {
       }
     })()
 
-  return success({ stream: stream.value })
+  return success({ stream: stream.value, totalTurns: interview.totalQuestions })
 }
 
-const submitTurnSchema = z.object({
-  interviewId: z.string(),
-  answer: z.string(),
-  inputMode: z.string(),
-})
-
-export type SubmitTurnInput = z.infer<typeof submitTurnSchema>
+export type SubmitTurnInput = { interviewId: string; answer: string; inputMode: string }
 
 export async function submitTurnAction(input: SubmitTurnInput) {
   const session = await getSession()
@@ -247,7 +250,7 @@ export async function submitTurnAction(input: SubmitTurnInput) {
         )
 
         const { textStream } = await streamText({
-          model: getGeminiModel(AI_MODELS.GEMINI.FLASH),
+          model: getOpenAiModel(AI_MODELS.OPENAI.MINI),
           system: buildInterviewSystemPrompt({
             plan: plan!,
             parsedData: interview.resume.parsedData as unknown as ResumeParsedData,
@@ -263,9 +266,9 @@ export async function submitTurnAction(input: SubmitTurnInput) {
           stream.update(delta)
         }
 
-        stream.done()
-
-        const parsed = parseAITurnResponse(fullText)
+        const parsed = normalizeAITurnForDb(
+          parseAITurnResponse(fullText) as Record<string, unknown>
+        )
 
         await prisma.interviewTurn.create({
           data: {
@@ -273,14 +276,14 @@ export async function submitTurnAction(input: SubmitTurnInput) {
             turnIndex: interview.currentTurnIndex + 2,
             role: 'AI',
             question: parsed.question,
-            questionCategory: parsed.category as QuestionCategory,
-            questionDifficulty: parsed.difficulty as QuestionDifficulty,
+            questionCategory: parsed.questionCategory as QuestionCategory,
+            questionDifficulty: parsed.questionDifficulty as QuestionDifficulty,
             psychologicalIntent: parsed.psychologicalIntent as PsychologicalIntent,
             targetSkills: parsed.targetSkills,
-            inputMode: parsed.suggestedInputMode as InputMode,
+            inputMode: parsed.inputMode as InputMode,
             isFollowUp: parsed.isFollowUp,
             followUpReason: parsed.followUpReason,
-            turnScore: parsed.previousAnswerScore,
+            turnScore: parsed.turnScore,
             topicScored: parsed.topicScored,
           },
         })
@@ -290,6 +293,7 @@ export async function submitTurnAction(input: SubmitTurnInput) {
           data: { currentTurnIndex: interview.currentTurnIndex + 2 },
         })
 
+        stream.done()
       } catch (err) {
         console.error(err)
         stream.error(err)
@@ -318,6 +322,7 @@ export async function recoverInterviewAction(interviewId: string) {
   return success({
     status: interview.status,
     currentTurnIndex: interview.currentTurnIndex,
+    totalTurns: interview.totalQuestions,
     turns: interview.turns.map(t => ({
       turnIndex: t.turnIndex,
       role: t.role.toLowerCase() as 'user' | 'ai',
@@ -353,6 +358,26 @@ export async function getDeepgramTokenAction() {
 
   const { key } = await response.json()
   return success({ token: key })
+}
+
+export async function getInterviewHistoryAction() {
+  const session = await getSession()
+  if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
+
+  try {
+    const interviews = await prisma.interview.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        jobProfile: { select: { title: true, targetRole: true } },
+      },
+    })
+
+    return success(interviews)
+  } catch (error) {
+    console.error('[getInterviewHistoryAction]', error)
+    return failure('Failed to load interviews', 'INTERNAL_ERROR')
+  }
 }
 
 export async function retryReportAction(interviewId: string) {
