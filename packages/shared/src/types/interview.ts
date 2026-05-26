@@ -13,10 +13,10 @@ export interface AblyStatePayload {
   version: number;
   status: InterviewStatus;
   phase: InterviewPhase;
-  
+
   currentQuestion: string | null;
   audioKey: string | null;
-  
+
   activitiesCompleted: number;
   activitiesPlanned: number;
   currentTurnIndex: number;
@@ -34,4 +34,19 @@ export interface ClientTurn {
   audioKey: string | null;
   codeSnippetShown: string | null;
   createdAt: string;
+}
+
+export type InterviewPlan = {
+  targetRole: string;
+  ecosystem: string;
+  claimsToValidate: string[];
+  activities: {
+    insertAfterTurn: number;
+    type: string;
+  }[];
+  turns: {
+    category: string;
+    psychologicalIntent: string;
+    notes?: string;
+  }[];
 }

@@ -9,7 +9,7 @@ export async function processReportJob(job: Job<{ interviewId: string }>) {
   try {
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId },
-      include: { turns: { orderBy: { turnIndex: 'asc' } } }
+      include: { turns: { orderBy: { turnIndex: 'asc' } }, jobProfile: true }
     });
 
     if (!interview) throw new Error('Interview not found in database');
@@ -29,7 +29,12 @@ export async function processReportJob(job: Job<{ interviewId: string }>) {
     }
 
     // Call @repo/ai — the correct place for all AI logic
-    const report = await generateInterviewReport(transcript);
+    const plan = interview.interviewPlan as any;
+    const report = await generateInterviewReport({
+      targetRole: interview.jobProfile.targetRole,
+      transcript,
+      interviewPlan: plan,
+    });
 
     // Save results to DB and mark COMPLETED
     await prisma.interview.update({

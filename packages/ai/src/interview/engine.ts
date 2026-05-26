@@ -1,40 +1,54 @@
-import { streamText, type ModelMessage, type StreamTextOnFinishCallback, type ToolSet } from 'ai'
-import { getGeminiModel, AI_MODELS } from '../client'
-import {
-  INTERVIEW_SYSTEM_PROMPT,
-  buildCodeContext,
-  buildResumeContext,
-  type ResumeInterviewContext,
-} from '../prompts/interview'
+import { CoreMessage } from 'ai'
 
-export type { ResumeInterviewContext }
-
-export interface InterviewStreamOptions {
-  codeContext?: { code: string; language: string }
-  resumeContext?: ResumeInterviewContext
+export interface TurnData {
+  role: 'AI' | 'USER'
+  question?: string | null
+  answer?: string | null
 }
 
-export async function streamInterviewTurn(
-  messages: ModelMessage[],
-  options: InterviewStreamOptions = {},
-  onFinish?: StreamTextOnFinishCallback<ToolSet>
-) {
-  const model = getGeminiModel(AI_MODELS.GEMINI.FLASH)
+export function buildConversationHistory(turns: TurnData[], newAnswer: string): CoreMessage[] {
+  const messages: CoreMessage[] = []
 
-  const systemParts: string[] = [INTERVIEW_SYSTEM_PROMPT]
-
-  if (options.resumeContext) {
-    systemParts.push(buildResumeContext(options.resumeContext))
+  for (const turn of turns) {
+    if (turn.role === 'AI' && turn.question) {
+      messages.push({ role: 'assistant', content: turn.question })
+    } else if (turn.role === 'USER' && turn.answer) {
+      messages.push({ role: 'user', content: turn.answer })
+    }
   }
 
-  if (options.codeContext?.code && options.codeContext.code.trim() !== '') {
-    systemParts.push(buildCodeContext(options.codeContext.code, options.codeContext.language))
+  // Add the new answer as the final user message
+  messages.push({ role: 'user', content: newAnswer })
+
+  return messages
+}
+
+export function parseAITurnResponse(fullText: string) {
+  // Often LLMs wrap JSON in markdown blocks
+  let jsonStr = fullText.trim()
+  if (jsonStr.startsWith('\`\`\`json')) {
+    jsonStr = jsonStr.replace(/^\`\`\`json/, '').replace(/\`\`\`$/, '').trim()
+  } else if (jsonStr.startsWith('\`\`\`')) {
+    jsonStr = jsonStr.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim()
   }
 
-  return streamText({
-    model,
-    system: systemParts.join(''),
-    messages,
-    onFinish,
-  })
+  try {
+    return JSON.parse(jsonStr)
+  } catch (err) {
+    console.error('[Engine] Failed to parse AI turn response:', jsonStr)
+    // Return a fallback so the interview doesn't crash completely,
+    // though in production this should perhaps be handled by structured output options in Vercel AI
+    return {
+      question: "Could you elaborate on that?",
+      category: "CONCEPTUAL",
+      difficulty: "MEDIUM",
+      psychologicalIntent: "DEPTH_PROBE",
+      targetSkills: [],
+      suggestedInputMode: "VOICE",
+      isFollowUp: true,
+      followUpReason: "parse_error",
+      previousAnswerScore: null,
+      topicScored: null
+    }
+  }
 }

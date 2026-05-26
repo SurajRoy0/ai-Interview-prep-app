@@ -1,131 +1,122 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { createClient, LiveClient, LiveTranscriptionEvents } from '@deepgram/sdk'
+import { useRef, useCallback, useState, useEffect } from 'react'
+import { getDeepgramTokenAction } from '@/actions/interview'
 
-export function useDeepgramSTT() {
-  const [isListening, setIsListening] = useState(false)
-  const [transcript, setTranscript] = useState('')
-  const [error, setError] = useState<string | null>(null)
-
-  const deepgramClientRef = useRef<LiveClient | null>(null)
+export function useDeepgramSTT({
+  enabled,
+  onTranscript,
+  onTurnEnd,
+  onTurnStart,
+}: {
+  enabled: boolean
+  onTranscript: (text: string) => void
+  onTurnEnd: (finalText: string) => void
+  onTurnStart: () => void
+}) {
+  const wsRef = useRef<WebSocket | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const transcriptRef = useRef<string>('')
+  const [isListening, setIsListening] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
 
-  const cleanup = useCallback(() => {
-    if (mediaRecorderRef.current) {
-      try {
-        if (mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop()
-        }
-      } catch { /* ignore */ }
-      mediaRecorderRef.current = null
-    }
+  const onTranscriptRef = useRef(onTranscript)
+  const onTurnEndRef = useRef(onTurnEnd)
+  const onTurnStartRef = useRef(onTurnStart)
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-
-    if (deepgramClientRef.current) {
-      try {
-        deepgramClientRef.current.finish()
-      } catch { /* ignore */ }
-      deepgramClientRef.current = null
-    }
-  }, [])
-
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      cleanup()
-    }
-  }, [cleanup])
+    onTranscriptRef.current = onTranscript
+    onTurnEndRef.current = onTurnEnd
+    onTurnStartRef.current = onTurnStart
+  }, [onTranscript, onTurnEnd, onTurnStart])
 
-  const startListening = useCallback(async () => {
-    setError(null)
-    cleanup()
+  const start = useCallback(async () => {
+    if (!enabled) return
+
+    const result = await getDeepgramTokenAction()
+    if (!result.success || !result.data?.token) return
 
     try {
-      const response = await fetch('/api/deepgram')
-      if (!response.ok) throw new Error('Failed to get Deepgram token')
-      const { key } = await response.json()
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      })
       streamRef.current = stream
 
-      const deepgram = createClient(key)
-      const live = deepgram.listen.live({
-        model: 'nova-2',
-        smart_format: true,
-        interim_results: true,
-        endpointing: 300,
+      const params = new URLSearchParams({
+        eot_threshold: '0.7',
+        eot_timeout_ms: '5000',
+        model: 'flux-general-en',
+        encoding: 'linear16',
+        sample_rate: '16000',
+        interim_results: 'true',
       })
 
-      live.addListener(LiveTranscriptionEvents.Open, () => {
+      const ws = new WebSocket(
+        `wss://api.deepgram.com/v2/listen?${params}`,
+        ['token', result.data.token]
+      )
+      wsRef.current = ws
+
+      ws.onopen = () => {
         setIsListening(true)
-
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
-        mediaRecorderRef.current = mediaRecorder
-
-        mediaRecorder.addEventListener('dataavailable', (event) => {
-          if (event.data.size > 0 && live.getReadyState() === 1) {
-            live.send(event.data)
+        const recorder = new MediaRecorder(stream)
+        recorder.ondataavailable = (e) => {
+          if (ws.readyState === WebSocket.OPEN && e.data.size > 0) {
+            ws.send(e.data)
           }
-        })
-
-        mediaRecorder.start(250)
-      })
-
-      live.addListener(LiveTranscriptionEvents.Transcript, (data) => {
-        const result = data.channel.alternatives[0]
-        if (result?.transcript && data.is_final) {
-          setTranscript((prev) => {
-            const separator = prev && !prev.endsWith(' ') ? ' ' : ''
-            return prev + separator + result.transcript
-          })
         }
-      })
+        recorder.start(100)
+        mediaRecorderRef.current = recorder
+      }
 
-      live.addListener(LiveTranscriptionEvents.Error, (err) => {
-        console.error('[useDeepgramSTT] Error:', err)
-        setError('Transcription connection error. Please try again.')
-        setIsListening(false)
-      })
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
 
-      live.addListener(LiveTranscriptionEvents.Close, () => {
-        setIsListening(false)
-      })
+          if (data.event === 'StartOfTurn') {
+            transcriptRef.current = ''
+            setIsRecording(true)
+            onTurnStartRef.current()
+          }
 
-      deepgramClientRef.current = live
+          let transcript = data.transcript
+          if (!transcript && data.channel?.alternatives?.[0]?.transcript) {
+            transcript = data.channel.alternatives[0].transcript
+          }
+
+          if (transcript) {
+            transcriptRef.current = transcript
+            onTranscriptRef.current(transcript)
+          }
+
+          if (data.event === 'EndOfTurn') {
+            setIsRecording(false)
+            const final = transcriptRef.current.trim()
+            transcriptRef.current = ''
+            if (final) onTurnEndRef.current(final)
+          }
+        } catch (err) {
+          console.error('[Deepgram] parse error:', err)
+        }
+      }
+
+      ws.onclose = () => { setIsListening(false); setIsRecording(false) }
+      ws.onerror = () => { setIsListening(false); setIsRecording(false) }
+
     } catch (err) {
-      console.error('[useDeepgramSTT] Failed to start:', err)
-      setError(err instanceof Error ? err.message : 'Failed to start microphone')
-      setIsListening(false)
-      cleanup()
+      console.error('[Deepgram] Failed to start:', err)
     }
-  }, [cleanup])
 
-  const stopListening = useCallback(() => {
-    cleanup()
+  }, [enabled])
+
+  const stop = useCallback(() => {
+    mediaRecorderRef.current?.stop()
+    wsRef.current?.close()
+    streamRef.current?.getTracks().forEach(t => t.stop())
     setIsListening(false)
-  }, [cleanup])
-
-  const resetTranscript = useCallback(() => {
-    setTranscript('')
+    setIsRecording(false)
   }, [])
 
-  const manuallySetTranscript = useCallback((text: string) => {
-    setTranscript(text)
-  }, [])
-
-  return {
-    isListening,
-    transcript,
-    error,
-    startListening,
-    stopListening,
-    resetTranscript,
-    manuallySetTranscript,
-  }
+  return { start, stop, isListening, isRecording }
 }

@@ -1,35 +1,31 @@
 import { generateObject } from 'ai'
-import { z } from 'zod'
 import { getGeminiModel, AI_MODELS } from '../client'
-import { REPORT_SYSTEM_PROMPT } from '../prompts/report'
-import { clamp } from '../utils'
+import { buildReportPrompt } from '../prompts/report'
+import { z } from 'zod'
+import { InterviewPlan } from '@repo/shared'
 
-export const interviewReportSchema = z.object({
+const ReportSchema = z.object({
   overallScore: z.number().min(0).max(100),
   technicalScore: z.number().min(0).max(100),
   communicationScore: z.number().min(0).max(100),
-  feedback: z.string().describe("A 2-3 paragraph summary of the candidate's performance, what they did well, and what they completely failed at."),
-  strongTopics: z.array(z.string()).describe("List of topics the candidate excelled at"),
-  weakTopics: z.array(z.string()).describe("List of topics the candidate needs to study more"),
+  feedback: z.string(),
+  strongTopics: z.array(z.string()),
+  weakTopics: z.array(z.string())
 })
 
-export type InterviewReportResult = z.infer<typeof interviewReportSchema>
+export type GeneratedReport = z.infer<typeof ReportSchema>
 
-export async function generateInterviewReport(transcript: string): Promise<InterviewReportResult> {
-  const model = getGeminiModel(AI_MODELS.GEMINI.FLASH)
-
+export async function generateInterviewReport(ctx: {
+  targetRole: string
+  transcript: string
+  interviewPlan: InterviewPlan
+}): Promise<GeneratedReport> {
   const { object } = await generateObject({
-    model,
-    schema: interviewReportSchema,
-    system: REPORT_SYSTEM_PROMPT,
-    prompt: `Evaluate the following interview transcript:\n\n${transcript}`,
-    temperature: 0,
+    model: getGeminiModel(AI_MODELS.GEMINI.PRO),
+    schema: ReportSchema,
+    prompt: buildReportPrompt(ctx),
+    temperature: 0.2
   })
 
-  return {
-    ...object,
-    overallScore: clamp(object.overallScore),
-    technicalScore: clamp(object.technicalScore),
-    communicationScore: clamp(object.communicationScore),
-  }
+  return object
 }

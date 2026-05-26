@@ -37,10 +37,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </div>
             <h1 className="text-2xl font-bold mb-2">Ready to Start</h1>
             <p className="text-muted-foreground max-w-sm mb-6">
-              You haven't started this interview yet. Ensure you have a quiet environment.
+              You haven&apos;t started this interview yet. Ensure you have a quiet environment.
             </p>
             <Button asChild size="lg" className="shadow-primary-glow">
-              <Link href={`/interview/mock/${id}`}>
+              <Link href={`/interview/session/${id}`}>
                 <PlayCircle className="w-5 h-5 mr-2" /> Start Interview Now
               </Link>
             </Button>

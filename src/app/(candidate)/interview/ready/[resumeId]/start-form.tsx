@@ -43,7 +43,7 @@ export function StartInterviewForm({ resumeId, jobProfileId, targetRole, experie
       }
 
       toast.success('Interview created! Entering sandbox...')
-      router.push(`/interview/mock/${result.data.interviewId}`)
+      router.push(`/interview/session/${result.data.interviewId}`)
     } catch (error) {
       console.error('Failed to create interview:', error)
       toast.error('Something went wrong')

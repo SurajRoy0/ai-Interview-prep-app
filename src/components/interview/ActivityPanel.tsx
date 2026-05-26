@@ -1,102 +1,85 @@
-import React, { useState } from 'react';
-import Editor from '@monaco-editor/react';
-import { Button } from '@/components/ui/button';
-import { Play, Code2 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+'use client'
 
-export interface ActivityPanelProps {
-  code: string;
-  onChange: (code: string | undefined) => void;
-  language: string;
-  onLanguageChange: (lang: string) => void;
-  onRunCode: () => void;
-  isCompiling: boolean;
-  output?: string;
-}
+import { useInterviewStore } from '@/store/interview-store'
+import { CodeEditor } from '@/components/interview/CodeEditor'
+import { Button } from '@/components/ui/button'
+import { submitActivityAction as submitAct, startActivityAction as startAct } from '@/actions/activity'
+import { useState, useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 
-export function ActivityPanel({
-  code,
-  onChange,
-  language,
-  onLanguageChange,
-  onRunCode,
-  isCompiling,
-  output,
-}: ActivityPanelProps) {
+export function ActivityPanel({ interviewId }: { interviewId: string }) {
+  const { currentActivity, setActivity, codeEditorContent, setPhase, phase } = useInterviewStore()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (phase === 'activity_active' && !currentActivity && !loading) {
+      setLoading(true)
+      startAct(interviewId).then(res => {
+        setLoading(false)
+        if (res.success && res.data?.activity) {
+          setActivity(res.data.activity)
+        } else {
+          setError(res.error?.message ?? 'Failed to load activity')
+        }
+      })
+    }
+  }, [phase, currentActivity, interviewId, loading, setActivity])
+
+  if (phase !== 'activity_active') return null
+
+  if (loading || !currentActivity) {
+    return (
+      <div className="flex-1 border-l bg-muted/20 p-6 flex flex-col items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground animate-pulse">Generating your technical challenge...</p>
+      </div>
+    )
+  }
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    const result = await submitAct(interviewId, currentActivity.requiresCodeEditor ? codeEditorContent : 'Completed conceptually')
+    setLoading(false)
+    if (result.success) {
+      setActivity(null)
+      // Advance to next turn / processing state
+      // This is slightly simplified. We'd tell the AI that the activity is complete and fetch next question.
+      // For now, let's just trigger a submission so the AI parses it.
+      setPhase('processing')
+      // Ideally we would trigger `submitTurnAction` here. Since ActiveInterview controls that, we might want to pass a callback.
+      // In a real implementation we would lift the submit logic up or use the store to trigger a re-fetch.
+    } else {
+      setError(result.error?.message ?? 'Failed to submit')
+    }
+  }
+
   return (
-    <div className="flex flex-col h-full bg-surface-1 border-l border-border/50">
-      <div className="flex items-center justify-between p-3 border-b border-border/50 bg-card">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Code2 className="w-4 h-4 text-primary" />
-            Workspace
-          </div>
-          <Select value={language} onValueChange={onLanguageChange}>
-            <SelectTrigger className="w-32 h-8 text-xs font-medium">
-              <SelectValue placeholder="Language" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="javascript">JavaScript</SelectItem>
-              <SelectItem value="typescript">TypeScript</SelectItem>
-              <SelectItem value="python">Python</SelectItem>
-              <SelectItem value="java">Java</SelectItem>
-              <SelectItem value="cpp">C++</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Button 
-          size="sm" 
-          onClick={onRunCode} 
-          disabled={isCompiling}
-          className="h-8 gap-2 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary transition-colors border-none shadow-none font-semibold rounded-full"
-        >
-          <Play className="w-3.5 h-3.5 fill-current" />
-          {isCompiling ? 'Running...' : 'Run Code'}
-        </Button>
+    <div className="w-1/2 min-w-[400px] border-l bg-background flex flex-col z-20 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]">
+      <div className="p-4 border-b bg-secondary/30">
+        <h2 className="text-lg font-bold">{currentActivity.title}</h2>
+        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+          {currentActivity.prompt}
+        </p>
       </div>
       
-      <div className="flex-1 relative">
-        <Editor
-          height="100%"
-          language={language}
-          theme="vs-dark"
-          value={code}
-          onChange={onChange}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-            wordWrap: 'on',
-            lineNumbersMinChars: 3,
-            padding: { top: 16 },
-            scrollBeyondLastLine: false,
-          }}
-          loading={
-            <div className="flex items-center justify-center h-full text-sm text-muted-foreground animate-pulse">
-              Loading editor...
-            </div>
-          }
-        />
+      <div className="flex-1 p-4 bg-[#1d1f21]">
+        {currentActivity.requiresCodeEditor ? (
+          <CodeEditor />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            No code editor required for this activity.
+          </div>
+        )}
       </div>
 
-      {/* Console Output Area */}
-      <div className="h-48 border-t border-border/50 bg-black/40 flex flex-col">
-        <div className="px-3 py-1.5 border-b border-border/30 bg-black/40 text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-          <span>Terminal Output</span>
-        </div>
-        <div className="flex-1 p-3 overflow-y-auto font-mono text-sm">
-          {isCompiling ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
-              Compiling...
-            </div>
-          ) : output ? (
-            <pre className="text-foreground whitespace-pre-wrap">{output}</pre>
-          ) : (
-            <span className="text-muted-foreground/50 italic">Click &quot;Run Code&quot; to execute your solution.</span>
-          )}
-        </div>
+      <div className="p-4 border-t flex justify-between items-center bg-background">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button onClick={handleSubmit} disabled={loading}>
+          {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+          Submit Solution
+        </Button>
       </div>
     </div>
-  );
+  )
 }

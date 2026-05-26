@@ -8,7 +8,7 @@ interface ReportPollingProps {
   pollIntervalMs?: number
 }
 
-export function ReportPolling({ interviewId, pollIntervalMs = 5000 }: ReportPollingProps) {
+export function ReportPolling({ pollIntervalMs = 5000 }: ReportPollingProps) {
   const router = useRouter()
 
   useEffect(() => {

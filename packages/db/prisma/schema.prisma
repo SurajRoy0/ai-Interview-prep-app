@@ -472,8 +472,9 @@ model InterviewTurn {
   topicScored String? // which JS topic this answer was scored against
 
   // Cost tracking
-  tokenUsage Int?
-  latencyMs  Int?
+  tokenUsage         Int?
+  latencyMs          Int?
+  streamingLatencyMs Int?
 
   createdAt DateTime @default(now())
 
