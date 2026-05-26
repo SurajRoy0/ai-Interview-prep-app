@@ -69,9 +69,6 @@ export async function generateInterviewPlan(ctx: {
   const { object } = await generateObject({
     model: getOpenAiModel(AI_MODELS.OPENAI.MINI),
     schema: InterviewPlanSchema,
-    schemaName: 'InterviewPlan',
-    schemaDescription:
-      'Structured mock interview plan. All category and intent fields must use exact enum strings from the schema.',
     prompt: buildInterviewPlannerPrompt({
       targetRole: jobProfile.targetRole,
       experienceLevel: jobProfile.experienceLevel,

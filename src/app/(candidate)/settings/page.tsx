@@ -1,4 +1,4 @@
-import { getDashboardProfile } from "@/actions/user"
+import { requireSession } from "@/lib/auth-server"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,8 @@ import { UserAvatar } from "@/components/shared/user-avatar"
 import { AlertCircle, User, Settings as SettingsIcon, Bell } from "lucide-react"
 
 export default async function SettingsPage() {
-  const user = await getDashboardProfile()
+  const session = await requireSession()
+  const user = session.user
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 max-w-3xl">

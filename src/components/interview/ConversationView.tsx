@@ -1,8 +1,19 @@
 'use client'
 
 import { useInterviewStore } from '@/store/interview-store'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+
+const FUNNY_TEXTS = [
+  "Judging your life choices...",
+  "Consulting the senior dev...",
+  "Looking for the missing semicolon...",
+  "Reading your resume and sighing...",
+  "Generating a very difficult question...",
+  "Analyzing your coding style...",
+  "Thinking really, really hard...",
+  "Trying to understand your logic...",
+]
 
 /**
  * Extracts the "question" string from a partial or complete JSON stream.
@@ -32,11 +43,21 @@ export function ConversationView() {
   const { turns, streamingText, phase } = useInterviewStore()
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const [loadingTextIndex, setLoadingTextIndex] = useState(0)
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [turns, streamingText])
+
+  useEffect(() => {
+    if (phase !== 'ai_typing') return
+    const interval = setInterval(() => {
+      setLoadingTextIndex((prev) => (prev + 1) % FUNNY_TEXTS.length)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [phase])
 
   const displayQuestion = extractStreamingQuestion(streamingText)
 
@@ -61,7 +82,7 @@ export function ConversationView() {
 
       {phase === 'ai_typing' && (
         <div className="bg-muted text-foreground self-start rounded-2xl rounded-bl-none px-5 py-4 max-w-[80%] whitespace-pre-wrap shadow-sm">
-          {displayQuestion || <span className="text-muted-foreground text-sm italic">Thinking...</span>}
+          {displayQuestion || <span className="text-muted-foreground text-sm italic">{FUNNY_TEXTS[loadingTextIndex]}</span>}
           <span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse align-middle" />
         </div>
       )}

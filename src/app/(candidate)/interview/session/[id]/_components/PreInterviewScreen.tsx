@@ -27,19 +27,10 @@ export function PreInterviewScreen({ interviewId }: { interviewId: string }) {
 
     const result = await startInterviewAction(interviewId)
 
-    if (!result.success || !result.data) {
+    if (!result.success) {
       setError(result.error?.message ?? 'Failed to start interview.')
       setStarting(false)
       return
-    }
-
-    // Drain the stream fully before refreshing so the DB transaction
-    // (credit deduction + first InterviewTurn creation) has completed.
-    if (result.data.stream) {
-      for await (const _ of readStreamableValue(result.data.stream)) {
-        // We intentionally discard the tokens here — the ActiveInterview
-        // screen will replay them via recoverInterviewAction on load.
-      }
     }
 
     router.refresh()

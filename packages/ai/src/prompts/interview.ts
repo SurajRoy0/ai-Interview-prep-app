@@ -123,12 +123,18 @@ CANDIDATE PROJECTS (reference by name in turn notes): ${projectNames.length ? pr
 KEY SKILLS: ${skills.length ? skills.join(', ') : 'none listed'}
 
 OUTPUT RULES — violations break the pipeline:
-1. Return exactly 8 turns in "turns" and exactly 1 entry in "activities".
+1. You MUST return a JSON object containing EXACTLY these top-level fields:
+   - "targetRole" (string)
+   - "ecosystem" (string)
+   - "claimsToValidate" (array of 2-6 strings challenging specific resume claims)
+   - "turns" (array of exactly 8 turns)
+   - "activities" (array of exactly 1 activity)
 2. Every turns[].category MUST be one of: ${formatEnumList(QUESTION_CATEGORIES)}
 3. Every turns[].psychologicalIntent MUST be one of: ${formatEnumList(PSYCHOLOGICAL_INTENTS)}
 4. activities[].type MUST be one of: ${formatEnumList(ACTIVITY_TYPES)}
 5. NEVER invent labels like TECHNICAL, CODING, TECH, SOFT_SKILLS, or SYSTEM_DESIGN.
    Use CONCEPTUAL for theory, RESUME_BASED for project-specific questions, SCENARIO for production situations.
+6. CRITICAL: Return the actual mock interview data. DO NOT output a JSON Schema definition.
 
 SUGGESTED TURN MIX (8 turns):
   Turn 1: HR + CONFIDENCE_CHECK

@@ -105,6 +105,52 @@ export async function startInterviewAction(interviewId: string) {
   if (interview.userId !== session.user.id) return failure('Forbidden', 'FORBIDDEN')
   if (interview.status !== 'PENDING') return failure('Already started', 'INVALID_STATE')
 
+  try {
+    // Consume credit and set ACTIVE
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: session.user.id },
+        include: { credits: { where: { credits: { gt: 0 } }, take: 1 } },
+      })
+
+      if (!user.freeInterviewUsed) {
+        await tx.user.update({ where: { id: user.id }, data: { freeInterviewUsed: true } })
+      } else if (user.credits.length > 0) {
+        await tx.interviewCredit.update({
+          where: { id: user.credits[0].id },
+          data: { credits: { decrement: 1 } },
+        })
+      } else {
+        throw new Error('No credits left')
+      }
+
+      await tx.interview.update({
+        where: { id: interviewId },
+        data: { status: 'ACTIVE', currentTurnIndex: 0, startedAt: new Date() },
+      })
+    })
+
+    return success({ stream: null, totalTurns: interview.totalQuestions })
+  } catch (err) {
+    console.error('[startInterviewAction]', err)
+    return failure('Failed to start interview', 'INTERNAL_ERROR')
+  }
+}
+
+export async function startFirstTurnAction(interviewId: string) {
+  const session = await getSession()
+  if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
+
+  const interview = await prisma.interview.findUnique({
+    where: { id: interviewId },
+    include: { resume: true },
+  })
+
+  if (!interview) return failure('Interview not found', 'NOT_FOUND')
+  if (interview.userId !== session.user.id) return failure('Forbidden', 'FORBIDDEN')
+  if (interview.status !== 'ACTIVE') return failure('Interview not active', 'INVALID_STATE')
+  if (interview.currentTurnIndex !== 0) return failure('First turn already started', 'INVALID_STATE')
+
   const stream = createStreamableValue('')
 
     ; (async () => {
@@ -131,44 +177,25 @@ export async function startInterviewAction(interviewId: string) {
           parseAITurnResponse(fullText) as Record<string, unknown>
         )
 
-        // Consume credit and set ACTIVE
-        await prisma.$transaction(async (tx) => {
-          const user = await tx.user.findUniqueOrThrow({
-            where: { id: session.user.id },
-            include: { credits: { where: { credits: { gt: 0 } }, take: 1 } },
-          })
+        await prisma.interviewTurn.create({
+          data: {
+            interviewId,
+            turnIndex: 1,
+            role: 'AI',
+            question: parsed.question,
+            questionCategory: parsed.questionCategory as QuestionCategory,
+            questionDifficulty: parsed.questionDifficulty as QuestionDifficulty,
+            psychologicalIntent: parsed.psychologicalIntent as PsychologicalIntent,
+            targetSkills: parsed.targetSkills,
+            inputMode: parsed.inputMode as InputMode,
+            isFollowUp: parsed.isFollowUp,
+            followUpReason: parsed.followUpReason,
+          },
+        })
 
-          if (!user.freeInterviewUsed) {
-            await tx.user.update({ where: { id: user.id }, data: { freeInterviewUsed: true } })
-          } else if (user.credits.length > 0) {
-            await tx.interviewCredit.update({
-              where: { id: user.credits[0].id },
-              data: { credits: { decrement: 1 } },
-            })
-          } else {
-            throw new Error('No credits left')
-          }
-
-          await tx.interview.update({
-            where: { id: interviewId },
-            data: { status: 'ACTIVE', currentTurnIndex: 1, startedAt: new Date() },
-          })
-
-          await tx.interviewTurn.create({
-            data: {
-              interviewId,
-              turnIndex: 1,
-              role: 'AI',
-              question: parsed.question,
-              questionCategory: parsed.questionCategory as QuestionCategory,
-              questionDifficulty: parsed.questionDifficulty as QuestionDifficulty,
-              psychologicalIntent: parsed.psychologicalIntent as PsychologicalIntent,
-              targetSkills: parsed.targetSkills,
-              inputMode: parsed.inputMode as InputMode,
-              isFollowUp: parsed.isFollowUp,
-              followUpReason: parsed.followUpReason,
-            },
-          })
+        await prisma.interview.update({
+          where: { id: interviewId },
+          data: { currentTurnIndex: 1 },
         })
 
         stream.done()
@@ -218,10 +245,9 @@ export async function submitTurnAction(input: SubmitTurnInput) {
 
   const isLastTurn = interview.currentTurnIndex + 1 >= interview.totalQuestions
   if (isLastTurn) {
-    // Update completedAt but keep status ACTIVE so the worker will process it.
     await prisma.interview.update({
       where: { id: interviewId },
-      data: { completedAt: new Date() }
+      data: { status: 'COMPLETED', completedAt: new Date() }
     })
     // Kick off report worker
     await reportQueue.add('generate-report', { interviewId })
@@ -323,6 +349,7 @@ export async function recoverInterviewAction(interviewId: string) {
     status: interview.status,
     currentTurnIndex: interview.currentTurnIndex,
     totalTurns: interview.totalQuestions,
+    startedAt: interview.startedAt?.toISOString(),
     turns: interview.turns.map(t => ({
       turnIndex: t.turnIndex,
       role: t.role.toLowerCase() as 'user' | 'ai',
@@ -330,6 +357,26 @@ export async function recoverInterviewAction(interviewId: string) {
       inputMode: t.inputMode ?? undefined,
     })),
   })
+}
+
+export async function endInterviewAction(interviewId: string) {
+  const session = await getSession()
+  if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
+
+  const interview = await prisma.interview.findUnique({
+    where: { id: interviewId }
+  })
+  if (!interview) return failure('Interview not found', 'NOT_FOUND')
+  if (interview.userId !== session.user.id) return failure('Forbidden', 'FORBIDDEN')
+
+  await prisma.interview.update({
+    where: { id: interviewId },
+    data: { status: 'COMPLETED', completedAt: new Date() }
+  })
+
+  await reportQueue.add('generate-report', { interviewId })
+
+  return success(undefined)
 }
 
 export async function getDeepgramTokenAction() {

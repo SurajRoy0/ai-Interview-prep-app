@@ -46,7 +46,7 @@ export function useDeepgramSTT({
       const params = new URLSearchParams({
         eot_threshold: '0.7',
         eot_timeout_ms: '5000',
-        model: 'flux-general-en',
+        model: 'nova-2',
         encoding: 'linear16',
         sample_rate: '16000',
         interim_results: 'true',

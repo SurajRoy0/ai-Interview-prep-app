@@ -32,6 +32,7 @@ export interface RecoveryState {
   status: string
   currentTurnIndex: number
   totalTurns: number
+  startedAt?: string
   turns: TurnDisplay[]
 }
 
@@ -115,12 +116,20 @@ export const useInterviewStore = create<InterviewStore>((set, get) => ({
   setCodeEditorContent: (codeEditorContent) => set({ codeEditorContent }),
   tickTimer: () => set((state) => ({ elapsedSeconds: state.elapsedSeconds + 1 })),
 
-  rebuildFromRecovery: (data) => set({
-    phase: data.status === 'COMPLETED' ? 'completed' : data.status === 'FAILED' ? 'failed' : 'waiting_input',
-    currentTurnIndex: data.currentTurnIndex,
-    totalTurns: data.totalTurns,
-    turns: data.turns,
-  }),
+  rebuildFromRecovery: (data) => {
+    let elapsedSeconds = 0
+    if (data.startedAt && data.status === 'ACTIVE') {
+      elapsedSeconds = Math.floor((Date.now() - new Date(data.startedAt).getTime()) / 1000)
+    }
+
+    set({
+      phase: data.status === 'COMPLETED' ? 'completed' : data.status === 'FAILED' ? 'failed' : 'waiting_input',
+      currentTurnIndex: data.currentTurnIndex,
+      totalTurns: data.totalTurns,
+      turns: data.turns,
+      elapsedSeconds,
+    })
+  },
 
   reset: () => set({
     interviewId: null,

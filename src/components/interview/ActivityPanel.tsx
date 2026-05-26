@@ -36,8 +36,17 @@ export function ActivityPanel({ interviewId, onActivityComplete }: ActivityPanel
   if (loading || !currentActivity) {
     return (
       <div className="flex-1 border-l bg-muted/20 p-6 flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground animate-pulse">Generating your technical challenge...</p>
+        {error ? (
+          <>
+            <p className="text-destructive mb-4">{error}</p>
+            <Button onClick={() => { setError(null); setLoading(true); startActivityAction(interviewId).then(res => { setLoading(false); if(res.success && res.data?.activity) setActivity(res.data.activity); else setError(res.error?.message ?? 'Failed to load activity') }) }}>Retry</Button>
+          </>
+        ) : (
+          <>
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground animate-pulse">Generating your technical challenge...</p>
+          </>
+        )}
       </div>
     )
   }

@@ -1,9 +1,10 @@
 import Link from "next/link"
-import { getDashboardProfile } from "@/actions/user"
+import { getDashboardStatsAction, getTotalCreditsAction } from "@/actions/user"
+import { requireSession } from "@/lib/auth-server"
 import { getJobProfilesAction } from "@/actions/job-profile"
 import {
   ArrowRight, FileText, CheckCircle2, CircleDashed,
-  Mic, Plus, Briefcase, Target, ChevronRight, Sparkles
+  Mic, Plus, Briefcase, Target, ChevronRight, Sparkles, Coins
 } from "lucide-react"
 import { CreateProfileDialog } from "@/components/job-profiles/create-profile-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -28,18 +29,20 @@ const LEVEL_LABEL: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const [user, profilesResult] = await Promise.all([
-    getDashboardProfile(),
+  const session = await requireSession()
+  const [profilesResult, stats, credits] = await Promise.all([
     getJobProfilesAction({ limit: 4 }),
+    getDashboardStatsAction(),
+    getTotalCreditsAction(),
   ])
 
   const profiles = profilesResult.success ? profilesResult.data.profiles : []
   const totalCount = profilesResult.success ? profilesResult.data.totalCount : 0
 
-  const name = user.name?.split(" ")[0] ?? "there"
-  const interviewCount = user._count.interviews
-  const resumeCount = user._count.resumes
-  const hasCredits = !user.freeInterviewUsed
+  const name = session?.user.name?.split(" ")[0] ?? "there"
+  const interviewCount = stats.interviewsCount
+  const resumeCount = stats.resumeCount
+  const totalCredits = credits
 
   const hour = new Date().getHours()
   const greeting =
@@ -64,12 +67,12 @@ export default async function DashboardPage() {
         </div>
 
         {/* Credits pill */}
-        <div className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium ${hasCredits
-          ? "bg-green-500/8 border-green-500/25 text-green-600 dark:text-green-400"
+        <div className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium ${totalCredits > 0
+          ? "bg-primary/10 border-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.1)]"
           : "bg-surface-1 border-border text-muted-foreground"
           }`}>
-          <span className={`h-2 w-2 rounded-full ${hasCredits ? "bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-muted-foreground/40"}`} />
-          {hasCredits ? "1 free session available" : "Free session used"}
+          <Coins className={`h-4 w-4 ${totalCredits > 0 ? "text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.8)]" : "text-muted-foreground/40"}`} />
+          {totalCredits > 0 ? `${totalCredits} Session${totalCredits !== 1 ? 's' : ''} available` : "0 Sessions available"}
         </div>
       </div>
 
