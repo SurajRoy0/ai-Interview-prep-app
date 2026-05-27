@@ -25,9 +25,27 @@ export async function processResumeJob(job: Job<{ resumeId: string }>) {
   })
 
   try {
+    let config = await prisma.planConfig.findFirst({ where: { isDefault: true } })
+    const subscription = await prisma.subscription.findFirst({
+      where: { userId: resume.jobProfile.userId, status: "ACTIVE" },
+      include: { plan: { include: { planConfig: true } } }
+    })
+    
+    if (subscription?.plan?.planConfig) {
+      config = subscription.plan.planConfig
+    }
+    
+    if (!config) throw new Error("No plan configuration found")
+
     const parsedData: ResumeParsedData = await parseResumeWithAI(
       resume.rawText,
-      resume.jobProfile.targetRole
+      resume.jobProfile.targetRole,
+      {
+        parseFullResume: config.parseFullResume,
+        maxProjectsToExtract: config.maxProjectsToExtract,
+        maxSkillsPerCategory: config.maxSkillsPerCategory,
+        maxExperienceYears: config.maxExperienceYears,
+      }
     )
 
     await prisma.resume.update({

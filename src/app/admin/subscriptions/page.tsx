@@ -38,7 +38,7 @@ export default async function AdminSubscriptionsPage() {
                   <div className="font-medium">{sub.user?.name || '—'}</div>
                   <div className="text-xs text-muted-foreground">{sub.user?.email}</div>
                 </TableCell>
-                <TableCell className="font-medium capitalize">{sub.planName.replace('_', ' ')}</TableCell>
+                <TableCell className="font-medium capitalize">{(sub.plan?.displayName || '').replace('_', ' ')}</TableCell>
                 <TableCell>
                   <Badge variant={sub.status === 'ACTIVE' ? 'default' : 'secondary'}>
                     {sub.status}
@@ -46,7 +46,7 @@ export default async function AdminSubscriptionsPage() {
                 </TableCell>
                 <TableCell className="text-right">{sub.interviewsLeft}</TableCell>
                 <TableCell className="text-right text-muted-foreground">
-                  {format(sub.endsAt, 'MMM d, yyyy')}
+                  {format(sub.currentPeriodEnd, 'MMM d, yyyy')}
                 </TableCell>
               </TableRow>
             ))}

@@ -22,6 +22,7 @@ export async function getBillingHistoryAction() {
     // 1. Fetch Payments
     const payments = await prisma.payment.findMany({
       where: { userId: session.user.id },
+      include: { plan: true },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -68,7 +69,7 @@ export async function getBillingHistoryAction() {
         id: p.id,
         date: p.createdAt,
         type: 'PAYMENT',
-        title: p.planName ? `Purchased: ${p.planName}` : 'Payment',
+        title: p.plan ? `Purchased: ${p.plan.displayName}` : 'Payment',
         description: 'Razorpay transaction',
         amount: `₹${(p.amountPaise / 100).toFixed(2)}`,
         status: p.status

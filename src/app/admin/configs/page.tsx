@@ -1,4 +1,4 @@
-import { getAdminConfigsAction } from '@/actions/admin'
+import { getAdminPlanConfigsAction } from '@/actions/admin'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 export default async function AdminConfigPage() {
-  const configs = await getAdminConfigsAction()
+  const configs = await getAdminPlanConfigsAction()
 
   return (
     <div className="space-y-6">

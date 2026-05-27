@@ -28,13 +28,13 @@ export async function createAdminConfigAction(data: ConfigInput) {
 
   // If this config is set to default, we must unset others
   if (parsed.isDefault) {
-    await prisma.interviewConfig.updateMany({
+    await prisma.planConfig.updateMany({
       where: { isDefault: true },
       data: { isDefault: false },
     })
   }
 
-  const config = await prisma.interviewConfig.create({
+  const config = await prisma.planConfig.create({
     data: {
       ...parsed,
       activityConfig: activityConfigJson,
@@ -58,13 +58,13 @@ export async function updateAdminConfigAction(id: string, data: ConfigInput) {
   }
 
   if (parsed.isDefault) {
-    await prisma.interviewConfig.updateMany({
+    await prisma.planConfig.updateMany({
       where: { id: { not: id }, isDefault: true },
       data: { isDefault: false },
     })
   }
 
-  const config = await prisma.interviewConfig.update({
+  const config = await prisma.planConfig.update({
     where: { id },
     data: {
       ...parsed,
@@ -83,7 +83,7 @@ export async function deleteAdminConfigAction(id: string) {
   // Prevent deleting if it's the only default one, or we can just let Prisma handle
   // But generally good to ensure at least one config exists, though we'll keep it simple here.
 
-  await prisma.interviewConfig.delete({
+  await prisma.planConfig.delete({
     where: { id },
   })
 
@@ -93,7 +93,7 @@ export async function deleteAdminConfigAction(id: string) {
 
 export async function getAdminConfigByIdAction(id: string) {
   await requireAdmin()
-  return await prisma.interviewConfig.findUnique({
+  return await prisma.planConfig.findUnique({
     where: { id },
   })
 }

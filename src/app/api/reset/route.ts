@@ -34,7 +34,8 @@ export async function POST() {
         "Account",
         "Verification",
         "FeatureFlag",
-        "InterviewConfig",
+        "PlanConfig",
+        "Plan",
         "User"
       RESTART IDENTITY CASCADE
     `)

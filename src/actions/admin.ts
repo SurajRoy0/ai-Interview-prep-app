@@ -32,9 +32,9 @@ export const getAdminUsersAction = async () => {
   })
 }
 
-export const getAdminConfigsAction = async () => {
+export const getAdminPlanConfigsAction = async () => {
   await requireAdmin()
-  return await prisma.interviewConfig.findMany({
+  return await prisma.planConfig.findMany({
     orderBy: { createdAt: 'desc' },
   })
 }
@@ -46,6 +46,7 @@ export const getAdminSubscriptionsAction = async () => {
       user: {
         select: { email: true, name: true },
       },
+      plan: true,
     },
     orderBy: { createdAt: 'desc' },
   })
