@@ -27,7 +27,7 @@ export const configSchema = z.object({
   maxPauseCount: z.coerce.number().min(0).max(10).default(2),
   resumeDeadlineHours: z.coerce.number().min(1).max(720).default(24),
 
-  allowedDifficultyModes: z.array(z.enum(["GRADUAL", "ADAPTIVE", "FLAT"])).min(1, "At least one difficulty mode must be allowed").default(["GRADUAL", "ADAPTIVE", "FLAT"]),
+  allowedDifficultyModes: z.array(z.enum(["GRADUAL", "ADAPTIVE", "INTENSIVE"])).min(1, "At least one difficulty mode must be allowed").default(["GRADUAL", "ADAPTIVE", "INTENSIVE"]),
 
   parseFullResume: z.boolean().default(false),
   maxProjectsToExtract: z.coerce.number().min(0).max(20).default(3),

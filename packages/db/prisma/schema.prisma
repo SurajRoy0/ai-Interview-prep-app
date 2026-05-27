@@ -26,112 +26,112 @@ enum Ecosystem {
 
 enum ExperienceLevel {
   FRESHER // 0 years
-  JUNIOR  // 0–2 years
-  MID     // 2–5 years
-  SENIOR  // 5+ years
+  JUNIOR // 0–2 years
+  MID // 2–5 years
+  SENIOR // 5+ years
 }
 
 enum InterviewStatus {
-  PENDING   // Created, plan generated, not yet started
-  ACTIVE    // Candidate answered first question, credit consumed
-  PAUSED    // Candidate paused or platform saved state
+  PENDING // Created, plan generated, not yet started
+  ACTIVE // Candidate answered first question, credit consumed
+  PAUSED // Candidate paused or platform saved state
   COMPLETED // All questions done, report generating
-  FAILED    // Unrecoverable error mid-interview
+  FAILED // Unrecoverable error mid-interview
   CANCELLED // Candidate abandoned deliberately
 }
 
 enum InterviewType {
-  MOCK          // General practice
-  TECHNICAL     // Deep technical only
-  HR            // HR + behavioural only
+  MOCK // General practice
+  TECHNICAL // Deep technical only
+  HR // HR + behavioural only
   SYSTEM_DESIGN // Architecture focused
-  BEHAVIORAL    // Behavioural + communication
-  FULL          // HR + Technical + Activities (default)
+  BEHAVIORAL // Behavioural + communication
+  FULL // HR + Technical + Activities (default)
 }
 
 enum InterviewMode {
-  TEXT  // Text input only
+  TEXT // Text input only
   VOICE // Voice input, no TTS (AI always types)
   MIXED // Voice preferred, text fallback
 }
 
 // Candidate-facing label → internal progression strategy
 enum DifficultyProgression {
-  GRADUAL  // 🟢 Warm Up    — easy → medium → hard
+  GRADUAL // 🟢 Warm Up    — easy → medium → hard
   ADAPTIVE // 🟡 Balanced   — adjusts based on running judge scores (default)
-  FLAT     // 🔴 Challenge  — hard baseline from question 1
+  INTENSIVE // 🔴 Challenge  — hard baseline from question 1
 }
 
 enum QuestionGenMode {
   HYBRID // Intents fixed at creation, question text generated when topic opens
-         // Only mode supported for now — enum kept for future flexibility
+  // Only mode supported for now — enum kept for future flexibility
 }
 
 enum ReportDepth {
-  MINIMAL    // Overall score + 3-line summary (free tier)
-  STANDARD   // Scores + topic analysis + suggestions
-  DETAILED   // Everything + per-question breakdown + authenticity analysis
+  MINIMAL // Overall score + 3-line summary (free tier)
+  STANDARD // Scores + topic analysis + suggestions
+  DETAILED // Everything + per-question breakdown + authenticity analysis
   EXHAUSTIVE // Everything + raw judge data + full topic evidence
 }
 
 enum QuestionType {
-  QA       // Standard question-answer topic
+  QA // Standard question-answer topic
   ACTIVITY // Interactive task (debugging, code correction, etc.)
 }
 
 enum TopicStatus {
   PENDING // Not yet reached in interview sequence
-  ACTIVE  // Candidate is currently on this question
-  CLOSED  // Completed — judge ran or is running
+  ACTIVE // Candidate is currently on this question
+  CLOSED // Completed — judge ran or is running
   SKIPPED // Candidate skipped or interview ended before this was reached
 }
 
 enum TopicCloseReason {
-  TIME_EXPIRED         // Main answer timer ran out
+  TIME_EXPIRED // Main answer timer ran out
   MAX_FOLLOWUPS_REACHED // Hit maxFollowUpsPerTopic from config
-  AI_ADVANCED          // AI decided answer was sufficient, set moveToNext: true
-  USER_ADVANCED        // Candidate explicitly said next/skip
-  SAFETY_CAP           // Hit hardCapTurnsPerTopic absolute ceiling
-  INTERVIEW_PAUSED     // Saved mid-topic due to pause
-  INTERVIEW_ENDED      // Interview ended before topic could close naturally
+  AI_ADVANCED // AI decided answer was sufficient, set moveToNext: true
+  USER_ADVANCED // Candidate explicitly said next/skip
+  SAFETY_CAP // Hit hardCapTurnsPerTopic absolute ceiling
+  INTERVIEW_PAUSED // Saved mid-topic due to pause
+  INTERVIEW_ENDED // Interview ended before topic could close naturally
 }
 
 enum TurnRole {
-  AI   // Interviewer — question, follow-up, hint, transition
+  AI // Interviewer — question, follow-up, hint, transition
   USER // Candidate — answer, clarification, code submission
 }
 
 enum TurnType {
   // AI turn types
-  QUESTION               // Opening question for this topic
-  FOLLOWUP               // AI probing deeper on same topic
+  QUESTION // Opening question for this topic
+  FOLLOWUP // AI probing deeper on same topic
   CLARIFICATION_RESPONSE // AI re-explaining after candidate asked for clarification
-  HINT                   // Activity only — nudges without revealing answer
-  TOPIC_TRANSITION       // Brief bridging line before next question streams
+  HINT // Activity only — nudges without revealing answer
+  TOPIC_TRANSITION // Brief bridging line before next question streams
 
   // USER turn types
-  ANSWER                 // Main answer to the question
-  FOLLOWUP_ANSWER        // Answer to a follow-up probe
-  CLARIFICATION_REQUEST  // "Can you repeat?" / "What do you mean by X?"
-  HINT_REQUEST           // Activity only — candidate asks for a hint
-  CODE_SUBMISSION        // Activity only — final code written in editor
-  SKIP_REQUEST           // Candidate wants to move on
+  ANSWER // Main answer to the question
+  FOLLOWUP_ANSWER // Answer to a follow-up probe
+  CLARIFICATION_REQUEST // "Can you repeat?" / "What do you mean by X?"
+  HINT_REQUEST // Activity only — candidate asks for a hint
+  CODE_SUBMISSION // Activity only — final code written in editor
+  SKIP_REQUEST // Candidate wants to move on
 }
 
 enum ActivityType {
-  DEBUGGING           // Show broken code, candidate finds the bug (voice)
-  CODE_CORRECTION     // Show broken code, candidate fixes it in editor
-  OUTPUT_PREDICTION   // Show code, candidate predicts exact output (voice)
-  RESUME_DEFENCE      // Defend a specific resume claim (voice)
-  PRIORITISATION      // Rank/order production scenarios (textarea)
-  COMMUNICATION       // Explain a concept simply to a fresher (voice)
-  SYSTEM_DESIGN_MINI  // Quick architecture sketch question (textarea)
+  DEBUGGING // Show broken code, candidate finds the bug (voice)
+  CODE_CORRECTION // Show broken code, candidate fixes it in editor
+  OUTPUT_PREDICTION // Show code, candidate predicts exact output (voice)
+  RESUME_DEFENCE // Defend a specific resume claim (voice)
+  PRIORITISATION // Rank/order production scenarios (textarea)
+  COMMUNICATION // Explain a concept simply to a fresher (voice)
+  SYSTEM_DESIGN_MINI // Quick architecture sketch question (textarea)
 }
 
 enum InputMode {
-  VOICE          // Candidate speaks only
-  TEXT           // Textarea only
-  CODE_EDITOR    // react-simple-code-editor only
+  VOICE // Candidate speaks only
+  TEXT // Textarea only
+  CODE_EDITOR // react-simple-code-editor only
   VOICE_AND_CODE // Voice explanation + editable code
   VOICE_AND_TEXT // Voice explanation + textarea
 }
@@ -156,26 +156,26 @@ enum QuestionDifficulty {
 }
 
 enum PsychologicalIntent {
-  CONFIDENCE_CHECK  // Warm up, build comfort
-  DEPTH_PROBE       // Go deeper on a topic
-  PRESSURE_TEST     // Challenge a claim or weak area
-  CLARITY_CHECK     // Assess communication quality
-  REASONING_EVAL    // Evaluate problem-solving process
+  CONFIDENCE_CHECK // Warm up, build comfort
+  DEPTH_PROBE // Go deeper on a topic
+  PRESSURE_TEST // Challenge a claim or weak area
+  CLARITY_CHECK // Assess communication quality
+  REASONING_EVAL // Evaluate problem-solving process
   AUTHENTICITY_CHECK // Validate a resume claim by name
   REFLECTION_TRIGGER // Force self-analysis
 }
 
 enum ImprovementPriority {
   CRITICAL // Fix before next interview
-  HIGH     // Important for target role
-  MEDIUM   // Good to address
-  LOW      // Nice to have
+  HIGH // Important for target role
+  MEDIUM // Good to address
+  LOW // Nice to have
 }
 
 enum PauseReason {
-  USER_PAUSED      // Candidate clicked pause deliberately
+  USER_PAUSED // Candidate clicked pause deliberately
   PLATFORM_FAILURE // Server error — auto-saved
-  BROWSER_CRASH    // Client detected unclean exit — auto-saved on recovery
+  BROWSER_CRASH // Client detected unclean exit — auto-saved on recovery
 }
 
 enum PaymentStatus {
@@ -221,9 +221,9 @@ model InterviewConfig {
 
   // ── PLANNER CONTROLS ──────────────────────────────────────
   // targetTurns: core Q&A question count — follow-ups never count against this
-  targetTurns          Int  @default(8)
-  maxFollowUpsPerTopic Int  @default(2)  // how many follow-up probes per question
-  hardCapTurnsPerTopic Int  @default(8)  // absolute safety ceiling per topic
+  targetTurns          Int @default(8)
+  maxFollowUpsPerTopic Int @default(2) // how many follow-up probes per question
+  hardCapTurnsPerTopic Int @default(8) // absolute safety ceiling per topic
 
   // Activity composition — JSON map of ActivityType → count
   // e.g. {"DEBUGGING": 2, "CODE_CORRECTION": 1, "SYSTEM_DESIGN_MINI": 1}
@@ -232,30 +232,30 @@ model InterviewConfig {
 
   // ── TIMING CONTROLS ───────────────────────────────────────
   questionTimeSecs      Int @default(120) // main answer timer per Q&A question
-  followUpTimeSecs      Int @default(90)  // follow-up answer timer
-  clarificationTimeSecs Int @default(30)  // clarification exchange timer
+  followUpTimeSecs      Int @default(90) // follow-up answer timer
+  clarificationTimeSecs Int @default(30) // clarification exchange timer
   activityTimeSecs      Int @default(300) // activity answer timer
 
   // ── PAUSE / RESUME CONTROLS ───────────────────────────────
-  maxPauseCount       Int @default(2)  // how many times candidate can pause
+  maxPauseCount       Int @default(2) // how many times candidate can pause
   resumeDeadlineHours Int @default(24) // hours before a paused interview expires
 
   // ── DIFFICULTY CONTROLS ───────────────────────────────────
   // Which DifficultyProgression options the candidate is allowed to choose
   // e.g. free tier: ["GRADUAL"] only — no choice given
   // pro tier: ["GRADUAL", "ADAPTIVE", "FLAT"]
-  allowedDifficultyModes DifficultyProgression[] @default([GRADUAL, ADAPTIVE, FLAT])
+  allowedDifficultyModes DifficultyProgression[] @default([GRADUAL, ADAPTIVE, INTENSIVE])
 
   // ── RESUME PARSER CONTROLS ────────────────────────────────
   parseFullResume      Boolean @default(false)
-  maxProjectsToExtract Int     @default(3)  // ignored if parseFullResume = true
+  maxProjectsToExtract Int     @default(3) // ignored if parseFullResume = true
   maxSkillsPerCategory Int     @default(10) // ignored if parseFullResume = true
   maxExperienceYears   Int     @default(10) // how far back to read work history
 
   // ── REPORT CONTROLS ───────────────────────────────────────
   reportDepth           ReportDepth @default(STANDARD)
-  maxTopicsInReport     Int         @default(5)    // top N topics graded
-  maxSuggestionsCount   Int         @default(3)    // improvement suggestions shown
+  maxTopicsInReport     Int         @default(5) // top N topics graded
+  maxSuggestionsCount   Int         @default(3) // improvement suggestions shown
   includeActivityReport Boolean     @default(true) // include activity scores
   includeTopicEvidence  Boolean     @default(false) // include answer quote evidence
   includeAuthAnalysis   Boolean     @default(false) // resume claim validation section
@@ -403,8 +403,8 @@ model JobProfile {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title       String  // e.g. "Frontend Engineer at Startups"
-  targetRole  String  // e.g. "Frontend Engineer"
+  title       String // e.g. "Frontend Engineer at Startups"
+  targetRole  String // e.g. "Frontend Engineer"
   description String? // optional notes about the preparation goal
 
   experienceLevel ExperienceLevel
@@ -495,8 +495,8 @@ model Interview {
   resumeSnapshot Json?
 
   // Interview classification
-  type   InterviewType @default(FULL)
-  mode   InterviewMode @default(MIXED)
+  type   InterviewType   @default(FULL)
+  mode   InterviewMode   @default(MIXED)
   status InterviewStatus @default(PENDING)
 
   title String? // e.g. "Frontend Engineer — Round 2"
@@ -515,20 +515,20 @@ model Interview {
   // ── INTERVIEW PLAN ───────────────────────────────────────
   // Pre-generated topic intents and sequence.
   // Question text is generated dynamically per HYBRID mode.
-  interviewPlan  Json?
-  planGenerated  Boolean @default(false)
+  interviewPlan Json?
+  planGenerated Boolean @default(false)
 
   // ── PROGRESS ─────────────────────────────────────────────
-  totalQuestions      Int @default(8) // copied from config.targetTurns
+  totalQuestions       Int @default(8) // copied from config.targetTurns
   currentQuestionIndex Int @default(0) // which InterviewQuestion is ACTIVE
-  activitiesCompleted Int @default(0)
-  activitiesPlanned   Int @default(0)
+  activitiesCompleted  Int @default(0)
+  activitiesPlanned    Int @default(0)
 
   // ── PAUSE / RESUME ───────────────────────────────────────
-  pauseCount    Int       @default(0)
-  maxPauseCount Int       // copied from config at creation
-  pausedAt      DateTime?
-  pauseReason   PauseReason?
+  pauseCount     Int          @default(0)
+  maxPauseCount  Int // copied from config at creation
+  pausedAt       DateTime?
+  pauseReason    PauseReason?
   resumeDeadline DateTime? // pausedAt + config.resumeDeadlineHours
 
   // ── SCORES (progressive, finalised in report) ────────────
@@ -590,9 +590,9 @@ model InterviewQuestion {
 
   // ── PLANNED AT CREATION (always present) ─────────────────
   // These are fixed when the interview plan is generated.
-  plannedIntent    PsychologicalIntent?
-  plannedCategory  QuestionCategory?
-  targetSkills     String[]
+  plannedIntent     PsychologicalIntent?
+  plannedCategory   QuestionCategory?
+  targetSkills      String[]
   plannedDifficulty QuestionDifficulty?
 
   // ── GENERATED WHEN TOPIC OPENS (HYBRID mode) ─────────────
@@ -606,11 +606,11 @@ model InterviewQuestion {
   expectedAnswer String?       @db.Text // NEVER sent to client — judge reads internally
 
   // ── TIMING ───────────────────────────────────────────────
-  timeLimitSeconds Int  // copied from config at creation per question type
+  timeLimitSeconds Int // copied from config at creation per question type
   remainingSeconds Int? // saved on pause — restored on resume
 
   // ── STATE ────────────────────────────────────────────────
-  status      TopicStatus      @default(PENDING)
+  status      TopicStatus       @default(PENDING)
   closeReason TopicCloseReason?
 
   startedAt DateTime?
@@ -620,13 +620,13 @@ model InterviewQuestion {
   // Populated async after topic closes.
   // Judge runs in parallel with next question streaming.
   // Must complete before this topic's summary is needed (always has time).
-  judgeSummary    String? @db.Text // 1–2 sentence summary carried forward as context
-  judgeScore      Int?    // 0–100
+  judgeSummary    String?  @db.Text // 1–2 sentence summary carried forward as context
+  judgeScore      Int? // 0–100
   judgeStrengths  String[]
   judgeWeaknesses String[]
 
-  judgePending    Boolean  @default(false) // true while judge job is running
-  judgeRetryCount Int      @default(0)     // auto-retried up to 3 times on failure
+  judgePending    Boolean   @default(false) // true while judge job is running
+  judgeRetryCount Int       @default(0) // auto-retried up to 3 times on failure
   judgedAt        DateTime?
 
   turns InterviewTurn[]
@@ -665,8 +665,8 @@ model InterviewTurn {
 
   // ── AI TURN METADATA ─────────────────────────────────────
   moveToNext         Boolean    @default(false) // AI signals this topic should close
-  suggestedInputMode InputMode?                 // what input the AI expects next
-  timeLimitSeconds   Int?                       // how long candidate has to respond
+  suggestedInputMode InputMode? // what input the AI expects next
+  timeLimitSeconds   Int? // how long candidate has to respond
 
   // ── PERFORMANCE ──────────────────────────────────────────
   latencyMs          Int? // server-side: time from request to first token
@@ -757,7 +757,7 @@ model ImprovementSuggestion {
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
   userId      String
 
-  topic    String              // 'async-js' | 'react-performance' etc.
+  topic    String // 'async-js' | 'react-performance' etc.
   priority ImprovementPriority
 
   title       String
@@ -810,7 +810,7 @@ model InterviewAnalytics {
   avgAnswerDurationMs  Int?
 
   // Completion
-  abandonedAtQuestion Int?   // questionIndex where candidate left
+  abandonedAtQuestion Int? // questionIndex where candidate left
   completionRate      Float?
   activitiesCompleted Int?
   pauseCount          Int?
@@ -857,7 +857,7 @@ model Payment {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  amountPaise Int    // stored in paise for precision (₹49 = 4900)
+  amountPaise Int // stored in paise for precision (₹49 = 4900)
   currency    String @default("INR")
 
   provider          String  @default("razorpay")
@@ -928,7 +928,7 @@ model AuditLog {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  action   String  // 'interview.created' | 'credit.granted' | 'role.changed'
+  action   String // 'interview.created' | 'credit.granted' | 'role.changed'
   entity   String? // 'Interview' | 'User' | 'Payment'
   entityId String?
 
@@ -951,7 +951,7 @@ model FeatureFlag {
   id String @id @default(cuid())
 
   key      String  @unique
-// e.g. 'voice_mode' | 'activity_hints' | 'report_exhaustive'
+  // e.g. 'voice_mode' | 'activity_hints' | 'report_exhaustive'
   enabled  Boolean @default(false)
   metadata Json?
 

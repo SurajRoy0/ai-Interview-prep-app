@@ -57,7 +57,7 @@ export function CreateProfileDialog({ children }: Props) {
         setOpen(false)
         reset()
         // Navigate to the new profile page (user can upload resume there)
-        router.push(`/job-profiles/${result.data.id}`)
+        router.push(`/candidate/job-profiles/${result.data.id}`)
       } else {
         toast.error(result.error?.message ?? "Something went wrong")
       }

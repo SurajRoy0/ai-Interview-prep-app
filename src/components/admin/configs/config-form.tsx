@@ -49,7 +49,7 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
       activityTimeSecs: 300,
       maxPauseCount: 2,
       resumeDeadlineHours: 24,
-      allowedDifficultyModes: ["GRADUAL", "ADAPTIVE", "FLAT"],
+      allowedDifficultyModes: ["GRADUAL", "ADAPTIVE", "INTENSIVE"],
       parseFullResume: false,
       maxProjectsToExtract: 3,
       maxSkillsPerCategory: 10,
@@ -278,6 +278,28 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
                   <Label>Resume Deadline (hours)</Label>
                   <Input type="number" {...register("resumeDeadlineHours")} />
                   {errors.resumeDeadlineHours && <p className="text-xs text-destructive">{errors.resumeDeadlineHours.message}</p>}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-border/50 max-w-2xl">
+                <div className="space-y-2 mb-3">
+                  <Label className="text-base">Allowed Difficulty Modes</Label>
+                  <p className="text-sm text-muted-foreground">Select which difficulty options the candidate can choose from.</p>
+                  {errors.allowedDifficultyModes && <p className="text-xs text-destructive">{errors.allowedDifficultyModes.message}</p>}
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="diffGradual" value="GRADUAL" {...register("allowedDifficultyModes")} className="h-4 w-4 accent-primary" />
+                    <Label htmlFor="diffGradual">Gradual</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="diffAdaptive" value="ADAPTIVE" {...register("allowedDifficultyModes")} className="h-4 w-4 accent-primary" />
+                    <Label htmlFor="diffAdaptive">Adaptive</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="diffIntensive" value="INTENSIVE" {...register("allowedDifficultyModes")} className="h-4 w-4 accent-primary" />
+                    <Label htmlFor="diffIntensive">Intensive</Label>
+                  </div>
                 </div>
               </div>
             </CardContent>
