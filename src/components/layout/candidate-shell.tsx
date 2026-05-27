@@ -37,7 +37,6 @@ import { ThemeToggle } from "../shared/theme-toggle"
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/job-profiles", label: "Job Profiles", icon: Briefcase },
-  { href: "/interview/history", label: "History", icon: History },
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings2 },
 ]
