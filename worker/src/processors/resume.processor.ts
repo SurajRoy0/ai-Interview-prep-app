@@ -1,7 +1,7 @@
 import { Job } from 'bullmq'
 import { prisma } from '@repo/db'
 import { parseResumeWithAI } from '@repo/ai'
-import type { ResumeParsedData } from '@repo/shared'
+import type { ParsedResume } from '@repo/shared'
 
 export async function processResumeJob(job: Job<{ resumeId: string }>) {
   const { resumeId } = job.data
@@ -37,7 +37,7 @@ export async function processResumeJob(job: Job<{ resumeId: string }>) {
     
     if (!config) throw new Error("No plan configuration found")
 
-    const parsedData: ResumeParsedData = await parseResumeWithAI(
+    const parsedData: ParsedResume = await parseResumeWithAI(
       resume.rawText,
       resume.jobProfile.targetRole,
       {

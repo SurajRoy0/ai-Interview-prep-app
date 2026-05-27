@@ -141,7 +141,7 @@ import { prisma } from '@repo/db'
 import { logger, env, AppError, ErrorCodes, rateLimit } from '@repo/shared'
 
 // Validation (use schemas — do not import `z` directly in pages)
-import { loginSchema, type LoginValues } from '@repo/validators'
+import { loginSchema, type LoginValues } from '@repo/shared'
 
 // AI / audio (when implementing features)
 import { InterviewEngine } from '@repo/ai'
@@ -325,7 +325,7 @@ import { createOrder } from '@repo/payments'
 3. Use in a page:
 
 ```tsx
-import { createInterviewSchema, type CreateInterviewInput } from '@repo/validators'
+import { createInterviewSchema, type CreateInterviewInput } from '@repo/shared'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 useForm<CreateInterviewInput>({ resolver: zodResolver(createInterviewSchema) })

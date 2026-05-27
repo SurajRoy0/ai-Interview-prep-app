@@ -2,7 +2,7 @@
 
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
-import { createJobProfileSchema } from '@repo/validators'
+import { createJobProfileSchema } from '@repo/shared'
 import { ActionResult, success, failure } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'

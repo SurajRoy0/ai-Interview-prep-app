@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { loginSchema, type LoginValues } from "@repo/validators"
+import { loginSchema, type LoginValues } from "@repo/shared"
 import { signIn } from "@/lib/auth-client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"

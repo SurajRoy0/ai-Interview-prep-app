@@ -3,7 +3,7 @@
 import { prisma } from "@repo/db"
 import { getSession } from "@/lib/auth-server"
 import { redirect } from "next/navigation"
-import { configSchema, type ConfigInput } from "@repo/validators"
+import { configSchema, type ConfigInput } from "@repo/shared"
 import { revalidatePath } from "next/cache"
 
 async function requireAdmin() {

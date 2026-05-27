@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     '@repo/db',
     '@repo/shared',
-    '@repo/validators',
+    '@repo/shared',
     '@repo/ai',
   ],
   serverExternalPackages: [
