@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, CreditCard, Sparkles, Receipt, AlertCircle, Coins, ArrowRight, ArrowLeft } from "lucide-react"
+import { CheckCircle2, Sparkles, Receipt, AlertCircle, Coins, ArrowRight, ArrowLeft } from "lucide-react"
 import { getTotalCreditsAction } from "@/actions/user"
 import { getBillingHistoryAction } from "@/actions/billing"
 

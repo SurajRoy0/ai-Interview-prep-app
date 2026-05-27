@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import {
   LayoutDashboard, CreditCard, Settings2,
-  ChevronDown, User, Menu, Users, Settings
+  ChevronDown, Menu, Users, Settings
 } from "lucide-react"
 import type { Session } from "@/lib/auth"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -32,7 +31,7 @@ import { ThemeToggle } from "../shared/theme-toggle"
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/config", label: "Config", icon: Settings },
+  { href: "/admin/configs", label: "Configs", icon: Settings },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/admin/settings", label: "Settings", icon: Settings2 },
 ]

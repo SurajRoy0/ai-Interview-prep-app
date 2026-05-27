@@ -1,4 +1,7 @@
 import { getAdminConfigsAction } from '@/actions/admin'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -14,9 +17,16 @@ export default async function AdminConfigPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Interview Configs</h1>
-        <p className="text-muted-foreground mt-1">Manage global rules and limits for mock interviews.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Interview Configs</h1>
+          <p className="text-muted-foreground mt-1">Manage global rules and limits for mock interviews.</p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/configs/new">
+            <Plus className="h-4 w-4 mr-2" /> New Config
+          </Link>
+        </Button>
       </div>
 
       <div className="rounded-md border bg-card">
@@ -29,6 +39,7 @@ export default async function AdminConfigPage() {
               <TableHead className="text-right">Questions</TableHead>
               <TableHead className="text-right">Max Follow-ups</TableHead>
               <TableHead className="text-right">Report Depth</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -52,6 +63,11 @@ export default async function AdminConfigPage() {
                 <TableCell className="text-right">{config.targetTurns}</TableCell>
                 <TableCell className="text-right">{config.maxFollowUpsPerTopic}</TableCell>
                 <TableCell className="text-right">{config.reportDepth}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/admin/configs/${config.id}`}>Edit</Link>
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
             {configs.length === 0 && (

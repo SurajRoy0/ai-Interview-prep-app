@@ -6,7 +6,7 @@ import {
   ArrowRight, FileText, CheckCircle2, CircleDashed,
   Mic, Plus, Briefcase, Target, ChevronRight, Sparkles, Coins
 } from "lucide-react"
-import { CreateProfileDialog } from "@/components/job-profiles/create-profile-dialog"
+import { CreateProfileDialog } from "@/components/candidate/job-profiles/create-profile-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 

@@ -2,9 +2,9 @@ import { getJobProfileByIdAction, getJobProfileResumesAction } from "@/actions/j
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Calendar, CheckCircle2, FileText, Activity, Star } from "lucide-react"
-import { ResumeUploader } from "@/components/resume/resume-uploader"
-import { ResumeCard } from "@/components/resume/resume-card"
-import { ClientRefreshPoller } from "@/components/resume/client-refresh-poller"
+import { ResumeUploader } from "@/components/candidate/resume/resume-uploader"
+import { ResumeCard } from "@/components/candidate/resume/resume-card"
+import { ClientRefreshPoller } from "@/components/candidate/resume/client-refresh-poller"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

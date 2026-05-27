@@ -1,6 +1,6 @@
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { AI_MODELS, getGeminiModel, getOpenAiModel } from '../client'
+import { AI_MODELS, getGeminiModel } from '../client'
 import { buildResumeParseSystemPrompt } from '../prompts/resume'
 import type { ResumeParsedData } from '@repo/shared'
 

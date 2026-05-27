@@ -3,7 +3,7 @@ import { getJobProfilesAction } from "@/actions/job-profile"
 import {
   Briefcase, Plus, Target, ChevronRight, CheckCircle2, CircleDashed
 } from "lucide-react"
-import { CreateProfileDialog } from "@/components/job-profiles/create-profile-dialog"
+import { CreateProfileDialog } from "@/components/candidate/job-profiles/create-profile-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

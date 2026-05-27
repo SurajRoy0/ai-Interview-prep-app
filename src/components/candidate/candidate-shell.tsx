@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import {
   LayoutDashboard, CreditCard, Settings2,
-  Plus, ChevronDown, User, Menu, Briefcase, History, Coins
+  Plus, ChevronDown, User, Menu, Briefcase, Coins
 } from "lucide-react"
 import type { Session } from "@/lib/auth"
 import { UserAvatar } from "@/components/shared/user-avatar"

@@ -1,6 +1,6 @@
 import { requireSession } from '@/lib/auth-server'
 import { redirect } from 'next/navigation'
-import { CandidateShell } from '@/components/layout/candidate-shell'
+import { CandidateShell } from '@/components/candidate/candidate-shell'
 import { getTotalCreditsAction } from '@/actions/user'
 
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
