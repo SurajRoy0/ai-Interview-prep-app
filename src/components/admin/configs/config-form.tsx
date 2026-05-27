@@ -11,12 +11,11 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
+// Removed Switch from imports
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog"
-import { Trash2, Save, ArrowLeft } from "lucide-react"
+import { Trash2, Save, ArrowLeft, Settings, Clock, Brain, FileText, BarChart3, Bot } from "lucide-react"
 
 interface ConfigFormProps {
   initialData?: Partial<Omit<ConfigInput, "activityConfig">> & { activityConfig?: unknown; id?: string }
@@ -72,7 +71,6 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
     formState: { errors },
   } = useForm<ConfigFormInput>({
@@ -80,14 +78,8 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
     defaultValues: defaultValues as ConfigFormInput,
   })
 
-  // Watchers for switches
-  const isActive = watch("isActive")
-  const isDefault = watch("isDefault")
+  // Watch this to conditionally render resume parser fields
   const parseFullResume = watch("parseFullResume")
-  const includeActivityReport = watch("includeActivityReport")
-  const includeTopicEvidence = watch("includeTopicEvidence")
-  const includeAuthAnalysis = watch("includeAuthAnalysis")
-  const reportUnlockable = watch("reportUnlockable")
 
   async function onSubmit(formData: ConfigFormInput) {
     const data = formData as unknown as ConfigInput;
@@ -104,9 +96,8 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
           return
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to save config")
-      console.error(error)
     } finally {
       setIsLoading(false)
     }
@@ -128,8 +119,9 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-16">
+      {/* ── Sticky Header ────────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b pb-4 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.push("/admin/configs")}>
             <ArrowLeft className="h-4 w-4" />
@@ -142,249 +134,314 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
         <div className="flex items-center gap-2">
           {isEditing && (
             <Button variant="destructive" onClick={() => setShowDeleteDialog(true)} disabled={isLoading}>
-              <Trash2 className="h-4 w-4 mr-2" /> Delete
+              <Trash2 className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Delete</span>
             </Button>
           )}
-          <Button onClick={handleSubmit(onSubmit)} disabled={isLoading}>
-            <Save className="h-4 w-4 mr-2" /> {isLoading ? "Saving..." : "Save Config"}
+          <Button onClick={handleSubmit(onSubmit)} disabled={isLoading} className="shadow-primary-glow">
+            <Save className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">{isLoading ? "Saving..." : "Save Config"}</span>
           </Button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="flex flex-wrap h-auto">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="planner">Planner</TabsTrigger>
-            <TabsTrigger value="timing">Timing & Pause</TabsTrigger>
-            <TabsTrigger value="resume">Resume Parser</TabsTrigger>
-            <TabsTrigger value="report">Report</TabsTrigger>
-            <TabsTrigger value="models">AI Models</TabsTrigger>
-          </TabsList>
+      {Object.keys(errors).length > 0 && (
+        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-lg flex flex-col gap-1">
+          <p className="font-semibold text-sm">Please fix the errors below to save:</p>
+          <ul className="list-disc pl-5 text-sm space-y-1">
+            {Object.entries(errors).map(([key, err]) => (
+              <li key={key}>{key}: {err?.message?.toString()}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-          <TabsContent value="general" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>General Settings</CardTitle>
-                <CardDescription>Basic identifiers and status.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input {...register("name")} placeholder="e.g. free_tier" />
-                    {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+      <form id="config-form" onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+        
+        {/* ── General ──────────────────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <Settings className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">General Settings</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Config Name</Label>
+                <Input id="name" {...register("name")} placeholder="e.g. free_tier" className="max-w-md" />
+                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
+                  <input 
+                    type="checkbox" 
+                    id="isActive" 
+                    {...register("isActive")} 
+                    className="mt-1 h-5 w-5 cursor-pointer accent-primary"
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-base cursor-pointer" htmlFor="isActive">Active Status</Label>
+                    <p className="text-sm text-muted-foreground">Check to enable this config. Uncheck to disable.</p>
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-4 mt-4">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Active Status</Label>
-                      <p className="text-sm text-muted-foreground">Whether this config can be used.</p>
-                    </div>
-                    <Switch checked={isActive} onCheckedChange={(val) => setValue("isActive", val)} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Is Default</Label>
-                      <p className="text-sm text-muted-foreground">Make this the default fallback config.</p>
-                    </div>
-                    <Switch checked={isDefault} onCheckedChange={(val) => setValue("isDefault", val)} />
+                
+                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
+                  <input 
+                    type="checkbox" 
+                    id="isDefault" 
+                    {...register("isDefault")} 
+                    className="mt-1 h-5 w-5 cursor-pointer accent-primary"
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-base cursor-pointer" htmlFor="isDefault">Default Config</Label>
+                    <p className="text-sm text-muted-foreground">Check to use this as the global fallback.</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-          <TabsContent value="planner" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Planner Controls</CardTitle>
-                <CardDescription>Configure interview length and activity mix.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* ── Planner Controls ─────────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <Brain className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Planner & Turn Controls</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label>Target Turns</Label>
+                  <Input type="number" {...register("targetTurns")} />
+                  {errors.targetTurns && <p className="text-xs text-destructive">{errors.targetTurns.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Max Follow-ups / Topic</Label>
+                  <Input type="number" {...register("maxFollowUpsPerTopic")} />
+                  {errors.maxFollowUpsPerTopic && <p className="text-xs text-destructive">{errors.maxFollowUpsPerTopic.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Hard Cap Turns / Topic</Label>
+                  <Input type="number" {...register("hardCapTurnsPerTopic")} />
+                  {errors.hardCapTurnsPerTopic && <p className="text-xs text-destructive">{errors.hardCapTurnsPerTopic.message}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-border/50">
+                <Label>Activity Config (JSON)</Label>
+                <p className="text-sm text-muted-foreground mb-2">Configure custom activities dynamically injected by the planner.</p>
+                <Textarea {...register("activityConfig")} className="font-mono min-h-[120px]" placeholder='{"DEBUGGING": 1}' />
+                {errors.activityConfig && <p className="text-xs text-destructive">{errors.activityConfig.message}</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* ── Timing & Pausing ─────────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <Clock className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Timing & Pausing Limits</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="space-y-2">
+                  <Label>Q&A Time (seconds)</Label>
+                  <Input type="number" {...register("questionTimeSecs")} />
+                  {errors.questionTimeSecs && <p className="text-xs text-destructive">{errors.questionTimeSecs.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Follow-up Time (seconds)</Label>
+                  <Input type="number" {...register("followUpTimeSecs")} />
+                  {errors.followUpTimeSecs && <p className="text-xs text-destructive">{errors.followUpTimeSecs.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Clarify Time (seconds)</Label>
+                  <Input type="number" {...register("clarificationTimeSecs")} />
+                  {errors.clarificationTimeSecs && <p className="text-xs text-destructive">{errors.clarificationTimeSecs.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Activity Time (seconds)</Label>
+                  <Input type="number" {...register("activityTimeSecs")} />
+                  {errors.activityTimeSecs && <p className="text-xs text-destructive">{errors.activityTimeSecs.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-border/50 max-w-2xl">
+                <div className="space-y-2">
+                  <Label>Max Pause Count</Label>
+                  <Input type="number" {...register("maxPauseCount")} />
+                  {errors.maxPauseCount && <p className="text-xs text-destructive">{errors.maxPauseCount.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Resume Deadline (hours)</Label>
+                  <Input type="number" {...register("resumeDeadlineHours")} />
+                  {errors.resumeDeadlineHours && <p className="text-xs text-destructive">{errors.resumeDeadlineHours.message}</p>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* ── Resume Parser ────────────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <FileText className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Resume Parser Config</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50 max-w-2xl">
+                <input 
+                  type="checkbox" 
+                  id="parseFullResume" 
+                  {...register("parseFullResume")} 
+                  className="mt-1 h-5 w-5 cursor-pointer accent-primary"
+                />
+                <div className="space-y-1">
+                  <Label className="text-base cursor-pointer" htmlFor="parseFullResume">Parse Full Resume</Label>
+                  <p className="text-sm text-muted-foreground">Check to extract all data. Uncheck to limit extracted data.</p>
+                </div>
+              </div>
+              
+              {!parseFullResume && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
                   <div className="space-y-2">
-                    <Label>Target Turns</Label>
-                    <Input type="number" {...register("targetTurns")} />
-                    {errors.targetTurns && <p className="text-xs text-destructive">{errors.targetTurns.message}</p>}
+                    <Label>Max Projects</Label>
+                    <Input type="number" {...register("maxProjectsToExtract")} />
+                    {errors.maxProjectsToExtract && <p className="text-xs text-destructive">{errors.maxProjectsToExtract.message}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Follow-ups / Topic</Label>
-                    <Input type="number" {...register("maxFollowUpsPerTopic")} />
+                    <Label>Max Skills / Category</Label>
+                    <Input type="number" {...register("maxSkillsPerCategory")} />
+                    {errors.maxSkillsPerCategory && <p className="text-xs text-destructive">{errors.maxSkillsPerCategory.message}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label>Hard Cap Turns / Topic</Label>
-                    <Input type="number" {...register("hardCapTurnsPerTopic")} />
+                    <Label>Max Exp. Years</Label>
+                    <Input type="number" {...register("maxExperienceYears")} />
+                    {errors.maxExperienceYears && <p className="text-xs text-destructive">{errors.maxExperienceYears.message}</p>}
                   </div>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
-                <div className="space-y-2 mt-4">
-                  <Label>Activity Config (JSON)</Label>
-                  <Textarea {...register("activityConfig")} className="font-mono min-h-[100px]" placeholder='{"DEBUGGING": 1}' />
-                  {errors.activityConfig && <p className="text-xs text-destructive">{errors.activityConfig.message}</p>}
+        {/* ── Report Generation ────────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Report Generation</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label>Report Depth</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    {...register("reportDepth")}
+                  >
+                    <option value="MINIMAL">Minimal</option>
+                    <option value="STANDARD">Standard</option>
+                    <option value="DETAILED">Detailed</option>
+                    <option value="EXHAUSTIVE">Exhaustive</option>
+                  </select>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="timing" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Timing & Pausing</CardTitle>
-                <CardDescription>Timers for answers and pause rules.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label>Q&A Time (s)</Label>
-                    <Input type="number" {...register("questionTimeSecs")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Follow-up Time (s)</Label>
-                    <Input type="number" {...register("followUpTimeSecs")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Clarify Time (s)</Label>
-                    <Input type="number" {...register("clarificationTimeSecs")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Activity Time (s)</Label>
-                    <Input type="number" {...register("activityTimeSecs")} />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Max Topics to Grade</Label>
+                  <Input type="number" {...register("maxTopicsInReport")} />
+                  {errors.maxTopicsInReport && <p className="text-xs text-destructive">{errors.maxTopicsInReport.message}</p>}
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 border-t pt-4">
-                  <div className="space-y-2">
-                    <Label>Max Pause Count</Label>
-                    <Input type="number" {...register("maxPauseCount")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Resume Deadline (hrs)</Label>
-                    <Input type="number" {...register("resumeDeadlineHours")} />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Max Suggestions</Label>
+                  <Input type="number" {...register("maxSuggestionsCount")} />
+                  {errors.maxSuggestionsCount && <p className="text-xs text-destructive">{errors.maxSuggestionsCount.message}</p>}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
 
-          <TabsContent value="resume" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Resume Parser Config</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border p-4 mb-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Parse Full Resume</Label>
-                    <p className="text-sm text-muted-foreground">Extract all data vs limited data.</p>
-                  </div>
-                  <Switch checked={parseFullResume} onCheckedChange={(val) => setValue("parseFullResume", val)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/50">
+                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
+                  <input 
+                    type="checkbox" 
+                    id="includeActivityReport" 
+                    {...register("includeActivityReport")} 
+                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
+                  />
+                  <Label className="text-base cursor-pointer" htmlFor="includeActivityReport">Include Activity Report</Label>
+                </div>
+                
+                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
+                  <input 
+                    type="checkbox" 
+                    id="includeTopicEvidence" 
+                    {...register("includeTopicEvidence")} 
+                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
+                  />
+                  <Label className="text-base cursor-pointer" htmlFor="includeTopicEvidence">Include Topic Evidence</Label>
                 </div>
 
-                {!parseFullResume && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Max Projects</Label>
-                      <Input type="number" {...register("maxProjectsToExtract")} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Max Skills / Category</Label>
-                      <Input type="number" {...register("maxSkillsPerCategory")} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Max Exp. Years</Label>
-                      <Input type="number" {...register("maxExperienceYears")} />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="report" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Report Generation</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Report Depth</Label>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                      {...register("reportDepth")}
-                    >
-                      <option value="MINIMAL">Minimal</option>
-                      <option value="STANDARD">Standard</option>
-                      <option value="DETAILED">Detailed</option>
-                      <option value="EXHAUSTIVE">Exhaustive</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Max Topics to Grade</Label>
-                    <Input type="number" {...register("maxTopicsInReport")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Max Suggestions</Label>
-                    <Input type="number" {...register("maxSuggestionsCount")} />
-                  </div>
+                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
+                  <input 
+                    type="checkbox" 
+                    id="includeAuthAnalysis" 
+                    {...register("includeAuthAnalysis")} 
+                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
+                  />
+                  <Label className="text-base cursor-pointer" htmlFor="includeAuthAnalysis">Include Auth Analysis</Label>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <Label>Include Activity Report</Label>
-                    <Switch checked={includeActivityReport} onCheckedChange={(val) => setValue("includeActivityReport", val)} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <Label>Include Topic Evidence</Label>
-                    <Switch checked={includeTopicEvidence} onCheckedChange={(val) => setValue("includeTopicEvidence", val)} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <Label>Include Auth Analysis</Label>
-                    <Switch checked={includeAuthAnalysis} onCheckedChange={(val) => setValue("includeAuthAnalysis", val)} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <Label>Report Unlockable (Upsell)</Label>
-                    <Switch checked={reportUnlockable} onCheckedChange={(val) => setValue("reportUnlockable", val)} />
+                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
+                  <input 
+                    type="checkbox" 
+                    id="reportUnlockable" 
+                    {...register("reportUnlockable")} 
+                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-base cursor-pointer" htmlFor="reportUnlockable">Report Unlockable (Upsell)</Label>
+                    <p className="text-sm text-muted-foreground">Check to require payment for full report.</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-          <TabsContent value="models" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Models</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Planner Model</Label>
-                    <Input {...register("plannerModel")} />
-                    {errors.plannerModel && <p className="text-xs text-destructive">{errors.plannerModel.message}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Interview Model</Label>
-                    <Input {...register("interviewModel")} />
-                    {errors.interviewModel && <p className="text-xs text-destructive">{errors.interviewModel.message}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Judge Model</Label>
-                    <Input {...register("judgeModel")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Report Model</Label>
-                    <Input {...register("reportModel")} />
-                  </div>
+        {/* ── AI Models ────────────────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <Bot className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">AI Models</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Planner Model</Label>
+                  <Input {...register("plannerModel")} />
+                  {errors.plannerModel && <p className="text-xs text-destructive">{errors.plannerModel.message}</p>}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-        </Tabs>
+                <div className="space-y-2">
+                  <Label>Interview Model</Label>
+                  <Input {...register("interviewModel")} />
+                  {errors.interviewModel && <p className="text-xs text-destructive">{errors.interviewModel.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Judge Model</Label>
+                  <Input {...register("judgeModel")} />
+                  {errors.judgeModel && <p className="text-xs text-destructive">{errors.judgeModel.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Report Model</Label>
+                  <Input {...register("reportModel")} />
+                  {errors.reportModel && <p className="text-xs text-destructive">{errors.reportModel.message}</p>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
       </form>
 
       <ConfirmationDialog
