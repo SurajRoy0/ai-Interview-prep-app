@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     // 4. Calculate Billing Period
     const now = new Date()
-    let currentPeriodEnd = new Date()
+    const currentPeriodEnd = new Date()
 
     if (plan.billingInterval === 'MONTHLY') {
       currentPeriodEnd.setMonth(now.getMonth() + 1)

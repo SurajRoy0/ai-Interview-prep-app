@@ -127,7 +127,7 @@ export function PlanForm({ initialData, planId, configs }: PlanFormProps) {
       )}
 
       <form id="plan-form" onSubmit={handleSubmit(onSubmit)} className="space-y-10">
-        
+
         {/* ── General ──────────────────────────────────────────────────────── */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
@@ -156,13 +156,13 @@ export function PlanForm({ initialData, planId, configs }: PlanFormProps) {
                 <Textarea id="description" {...register("description")} placeholder="Optional tagline for the pricing page" />
                 {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
                 <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
-                  <input 
-                    type="checkbox" 
-                    id="isActive" 
-                    {...register("isActive")} 
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    {...register("isActive")}
                     className="mt-1 h-5 w-5 cursor-pointer accent-primary"
                   />
                   <div className="space-y-1">
@@ -170,17 +170,17 @@ export function PlanForm({ initialData, planId, configs }: PlanFormProps) {
                     <p className="text-sm text-muted-foreground">Is this plan currently enabled in the system?</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
-                  <input 
-                    type="checkbox" 
-                    id="isVisible" 
-                    {...register("isVisible")} 
+                  <input
+                    type="checkbox"
+                    id="isVisible"
+                    {...register("isVisible")}
                     className="mt-1 h-5 w-5 cursor-pointer accent-primary"
                   />
                   <div className="space-y-1">
                     <Label className="text-base cursor-pointer" htmlFor="isVisible">Visible on Pricing Page</Label>
-                    <p className="text-sm text-muted-foreground">Uncheck for legacy plans that users shouldn't buy anymore.</p>
+                    <p className="text-sm text-muted-foreground">Uncheck for legacy plans that users shouldn&apos;t buy anymore.</p>
                   </div>
                 </div>
               </div>

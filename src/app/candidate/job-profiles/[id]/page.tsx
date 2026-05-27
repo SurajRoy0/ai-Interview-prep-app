@@ -1,12 +1,14 @@
 import { getJobProfileByIdAction, getJobProfileResumesAction } from "@/actions/job-profile"
+import { getUserActivePlanConfig } from "@repo/db"
+import { getSession } from "@/lib/auth-server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Calendar, CheckCircle2, FileText, Activity, Star } from "lucide-react"
 import { ResumeUploader } from "@/components/candidate/resume/resume-uploader"
 import { ResumeCard } from "@/components/candidate/resume/resume-card"
 import { ClientRefreshPoller } from "@/components/candidate/resume/client-refresh-poller"
+import { StartInterviewModal } from "@/components/candidate/interview/start-interview-modal"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Pagination,
   PaginationContent,
@@ -29,9 +31,13 @@ export default async function JobProfileDetailPage({
 
   const RESUMES_LIMIT = 5
 
-  const [profileResult, resumesResult] = await Promise.all([
+  const session = await getSession()
+  if (!session) return notFound()
+
+  const [profileResult, resumesResult, planConfig] = await Promise.all([
     getJobProfileByIdAction(id),
     getJobProfileResumesAction(id, currentPage, RESUMES_LIMIT),
+    getUserActivePlanConfig(session.user.id)
   ])
 
   if (!profileResult.success) return notFound()
@@ -44,11 +50,11 @@ export default async function JobProfileDetailPage({
 
   const sortedResumes = resumes
 
-  const isProcessing = sortedResumes.some(r => r.parseStatus === "PENDING" || r.parseStatus === "PROCESSING")
+  const isProcessing = sortedResumes.some((r) => r.parseStatus === "PENDING" || r.parseStatus === "PROCESSING")
 
   // Map to find which resumes have been used in interviews
   const resumeIdToInterviewCount = new Map<string, number>()
-  profile.interviews.forEach(interview => {
+  profile.interviews.forEach((interview) => {
     const current = resumeIdToInterviewCount.get(interview.resumeId) || 0
     resumeIdToInterviewCount.set(interview.resumeId, current + 1)
   })
@@ -128,7 +134,7 @@ export default async function JobProfileDetailPage({
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-3">
-                    {sortedResumes.map(resume => (
+                    {sortedResumes.map((resume) => (
                       <ResumeCard
                         key={resume.id}
                         resume={resume}
@@ -192,18 +198,11 @@ export default async function JobProfileDetailPage({
               <p className="text-primary-foreground/90 text-sm mb-6 leading-relaxed">
                 Start a mock interview tailored to <strong className="font-semibold">{profile.targetRole}</strong> using your active resume.
               </p>
-              <Button
-                asChild={hasActiveResume}
-                disabled={!hasActiveResume}
-                size="lg"
-                className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl font-bold text-sm h-12 shadow-sm"
-              >
-                {hasActiveResume ? (
-                  <Link href={`#`}>Start Interview</Link>
-                ) : (
-                  <span>Start Interview</span>
-                )}
-              </Button>
+              <StartInterviewModal
+                jobProfileId={profile.id}
+                allowedDifficultyModes={planConfig.allowedDifficultyModes}
+                hasActiveResume={hasActiveResume}
+              />
               {!hasActiveResume && (
                 <p className="text-xs text-primary-foreground/70 mt-3 text-center font-medium">
                   Upload and activate a resume first
@@ -226,7 +225,7 @@ export default async function JobProfileDetailPage({
               </div>
             ) : (
               <div className="space-y-2">
-                {profile.interviews.map(interview => (
+                {profile.interviews.map((interview) => (
                   <Link
                     key={interview.id}
                     href={`#`}
