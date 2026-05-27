@@ -26,53 +26,112 @@ enum Ecosystem {
 
 enum ExperienceLevel {
   FRESHER // 0 years
-  JUNIOR // 0–2 years
-  MID // 2–5 years
-  SENIOR // 5+ years
+  JUNIOR  // 0–2 years
+  MID     // 2–5 years
+  SENIOR  // 5+ years
 }
 
 enum InterviewStatus {
-  PENDING // Created, plan generated, not yet started
-  ACTIVE // Candidate answered first question
-  COMPLETED // All turns done, report generating
-  FAILED // Error or timeout — unrecoverable
-  CANCELLED // User abandoned
+  PENDING   // Created, plan generated, not yet started
+  ACTIVE    // Candidate answered first question, credit consumed
+  PAUSED    // Candidate paused or platform saved state
+  COMPLETED // All questions done, report generating
+  FAILED    // Unrecoverable error mid-interview
+  CANCELLED // Candidate abandoned deliberately
 }
 
 enum InterviewType {
-  MOCK // General practice
-  TECHNICAL // Deep technical only
-  HR // HR + behavioural only
+  MOCK          // General practice
+  TECHNICAL     // Deep technical only
+  HR            // HR + behavioural only
   SYSTEM_DESIGN // Architecture focused
-  BEHAVIORAL // Behavioural + communication
-  FULL // HR + Technical + Activities (default)
+  BEHAVIORAL    // Behavioural + communication
+  FULL          // HR + Technical + Activities (default)
 }
 
 enum InterviewMode {
-  TEXT // Text input only
-  VOICE // Voice input + TTS output
-  MIXED // Voice input, text fallback
+  TEXT  // Text input only
+  VOICE // Voice input, no TTS (AI always types)
+  MIXED // Voice preferred, text fallback
+}
+
+// Candidate-facing label → internal progression strategy
+enum DifficultyProgression {
+  GRADUAL  // 🟢 Warm Up    — easy → medium → hard
+  ADAPTIVE // 🟡 Balanced   — adjusts based on running judge scores (default)
+  FLAT     // 🔴 Challenge  — hard baseline from question 1
+}
+
+enum QuestionGenMode {
+  HYBRID // Intents fixed at creation, question text generated when topic opens
+         // Only mode supported for now — enum kept for future flexibility
+}
+
+enum ReportDepth {
+  MINIMAL    // Overall score + 3-line summary (free tier)
+  STANDARD   // Scores + topic analysis + suggestions
+  DETAILED   // Everything + per-question breakdown + authenticity analysis
+  EXHAUSTIVE // Everything + raw judge data + full topic evidence
+}
+
+enum QuestionType {
+  QA       // Standard question-answer topic
+  ACTIVITY // Interactive task (debugging, code correction, etc.)
+}
+
+enum TopicStatus {
+  PENDING // Not yet reached in interview sequence
+  ACTIVE  // Candidate is currently on this question
+  CLOSED  // Completed — judge ran or is running
+  SKIPPED // Candidate skipped or interview ended before this was reached
+}
+
+enum TopicCloseReason {
+  TIME_EXPIRED         // Main answer timer ran out
+  MAX_FOLLOWUPS_REACHED // Hit maxFollowUpsPerTopic from config
+  AI_ADVANCED          // AI decided answer was sufficient, set moveToNext: true
+  USER_ADVANCED        // Candidate explicitly said next/skip
+  SAFETY_CAP           // Hit hardCapTurnsPerTopic absolute ceiling
+  INTERVIEW_PAUSED     // Saved mid-topic due to pause
+  INTERVIEW_ENDED      // Interview ended before topic could close naturally
 }
 
 enum TurnRole {
-  AI // Interviewer turn — contains question
-  USER // Candidate turn — contains answer
+  AI   // Interviewer — question, follow-up, hint, transition
+  USER // Candidate — answer, clarification, code submission
+}
+
+enum TurnType {
+  // AI turn types
+  QUESTION               // Opening question for this topic
+  FOLLOWUP               // AI probing deeper on same topic
+  CLARIFICATION_RESPONSE // AI re-explaining after candidate asked for clarification
+  HINT                   // Activity only — nudges without revealing answer
+  TOPIC_TRANSITION       // Brief bridging line before next question streams
+
+  // USER turn types
+  ANSWER                 // Main answer to the question
+  FOLLOWUP_ANSWER        // Answer to a follow-up probe
+  CLARIFICATION_REQUEST  // "Can you repeat?" / "What do you mean by X?"
+  HINT_REQUEST           // Activity only — candidate asks for a hint
+  CODE_SUBMISSION        // Activity only — final code written in editor
+  SKIP_REQUEST           // Candidate wants to move on
 }
 
 enum ActivityType {
-  DEBUGGING // Show broken code, candidate finds the bug
-  CODE_CORRECTION // Show broken code, candidate fixes it in editor
-  OUTPUT_PREDICTION // Show code, candidate predicts exact output
-  RESUME_DEFENCE // Defend a specific resume claim
-  PRIORITISATION // Rank/order production scenarios
-  COMMUNICATION // Explain a concept simply to a fresher
-  SYSTEM_DESIGN_MINI // Quick architecture sketch question
+  DEBUGGING           // Show broken code, candidate finds the bug (voice)
+  CODE_CORRECTION     // Show broken code, candidate fixes it in editor
+  OUTPUT_PREDICTION   // Show code, candidate predicts exact output (voice)
+  RESUME_DEFENCE      // Defend a specific resume claim (voice)
+  PRIORITISATION      // Rank/order production scenarios (textarea)
+  COMMUNICATION       // Explain a concept simply to a fresher (voice)
+  SYSTEM_DESIGN_MINI  // Quick architecture sketch question (textarea)
 }
 
 enum InputMode {
-  VOICE // Candidate speaks only
-  TEXT // Textarea only
-  CODE_EDITOR // react-simple-code-editor only
+  VOICE          // Candidate speaks only
+  TEXT           // Textarea only
+  CODE_EDITOR    // react-simple-code-editor only
   VOICE_AND_CODE // Voice explanation + editable code
   VOICE_AND_TEXT // Voice explanation + textarea
 }
@@ -97,20 +156,26 @@ enum QuestionDifficulty {
 }
 
 enum PsychologicalIntent {
-  CONFIDENCE_CHECK // Warm up, build comfort
-  DEPTH_PROBE // Go deeper on a topic
-  PRESSURE_TEST // Challenge a claim or weak area
-  CLARITY_CHECK // Assess communication quality
-  REASONING_EVAL // Evaluate problem-solving process
-  AUTHENTICITY_CHECK // Validate resume claim
+  CONFIDENCE_CHECK  // Warm up, build comfort
+  DEPTH_PROBE       // Go deeper on a topic
+  PRESSURE_TEST     // Challenge a claim or weak area
+  CLARITY_CHECK     // Assess communication quality
+  REASONING_EVAL    // Evaluate problem-solving process
+  AUTHENTICITY_CHECK // Validate a resume claim by name
   REFLECTION_TRIGGER // Force self-analysis
 }
 
 enum ImprovementPriority {
   CRITICAL // Fix before next interview
-  HIGH // Important for target role
-  MEDIUM // Good to address
-  LOW // Nice to have
+  HIGH     // Important for target role
+  MEDIUM   // Good to address
+  LOW      // Nice to have
+}
+
+enum PauseReason {
+  USER_PAUSED      // Candidate clicked pause deliberately
+  PLATFORM_FAILURE // Server error — auto-saved
+  BROWSER_CRASH    // Client detected unclean exit — auto-saved on recovery
 }
 
 enum PaymentStatus {
@@ -138,6 +203,82 @@ enum VisibilityStatus {
   PRIVATE
   PUBLIC
   RECRUITER_VISIBLE
+}
+
+// ======================================================
+// INTERVIEW CONFIG
+// Why: Single source of truth for all AI, timing, and
+//      report controls. Admin-managed. Copied as a frozen
+//      snapshot onto every interview at creation time so
+//      config changes never affect in-progress interviews.
+// ======================================================
+
+model InterviewConfig {
+  id        String  @id @default(cuid())
+  name      String  @unique // "free_tier" | "pro" | "enterprise" | "dev_testing"
+  isDefault Boolean @default(false)
+  isActive  Boolean @default(true)
+
+  // ── PLANNER CONTROLS ──────────────────────────────────────
+  // targetTurns: core Q&A question count — follow-ups never count against this
+  targetTurns          Int  @default(8)
+  maxFollowUpsPerTopic Int  @default(2)  // how many follow-up probes per question
+  hardCapTurnsPerTopic Int  @default(8)  // absolute safety ceiling per topic
+
+  // Activity composition — JSON map of ActivityType → count
+  // e.g. {"DEBUGGING": 2, "CODE_CORRECTION": 1, "SYSTEM_DESIGN_MINI": 1}
+  // Set all to 0 for pure Q&A during dev/testing
+  activityConfig Json @default("{}")
+
+  // ── TIMING CONTROLS ───────────────────────────────────────
+  questionTimeSecs      Int @default(120) // main answer timer per Q&A question
+  followUpTimeSecs      Int @default(90)  // follow-up answer timer
+  clarificationTimeSecs Int @default(30)  // clarification exchange timer
+  activityTimeSecs      Int @default(300) // activity answer timer
+
+  // ── PAUSE / RESUME CONTROLS ───────────────────────────────
+  maxPauseCount       Int @default(2)  // how many times candidate can pause
+  resumeDeadlineHours Int @default(24) // hours before a paused interview expires
+
+  // ── DIFFICULTY CONTROLS ───────────────────────────────────
+  // Which DifficultyProgression options the candidate is allowed to choose
+  // e.g. free tier: ["GRADUAL"] only — no choice given
+  // pro tier: ["GRADUAL", "ADAPTIVE", "FLAT"]
+  allowedDifficultyModes DifficultyProgression[] @default([GRADUAL, ADAPTIVE, FLAT])
+
+  // ── RESUME PARSER CONTROLS ────────────────────────────────
+  parseFullResume      Boolean @default(false)
+  maxProjectsToExtract Int     @default(3)  // ignored if parseFullResume = true
+  maxSkillsPerCategory Int     @default(10) // ignored if parseFullResume = true
+  maxExperienceYears   Int     @default(10) // how far back to read work history
+
+  // ── REPORT CONTROLS ───────────────────────────────────────
+  reportDepth           ReportDepth @default(STANDARD)
+  maxTopicsInReport     Int         @default(5)    // top N topics graded
+  maxSuggestionsCount   Int         @default(3)    // improvement suggestions shown
+  includeActivityReport Boolean     @default(true) // include activity scores
+  includeTopicEvidence  Boolean     @default(false) // include answer quote evidence
+  includeAuthAnalysis   Boolean     @default(false) // resume claim validation section
+
+  // Upsell gate: show teaser report, full report costs 1 credit
+  reportUnlockable Boolean @default(false)
+
+  // ── AI MODEL CONTROLS ─────────────────────────────────────
+  // Each task can point to a different model — swap per tier with zero code change
+  plannerModel   String @default("gemini-2.5-flash")
+  interviewModel String @default("gemini-2.5-flash")
+  judgeModel     String @default("gemini-2.5-flash")
+  reportModel    String @default("gemini-2.5-flash")
+
+  // ── QUESTION GENERATION MODE ──────────────────────────────
+  // HYBRID: intents fixed at creation, question text generated when topic opens
+  questionGenMode QuestionGenMode @default(HYBRID)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isDefault])
+  @@index([isActive])
 }
 
 // ======================================================
@@ -180,7 +321,6 @@ model User {
 
 // ======================================================
 // BETTER AUTH — SESSION
-// Why: Required by Better Auth. Do not modify.
 // ======================================================
 
 model Session {
@@ -205,7 +345,6 @@ model Session {
 
 // ======================================================
 // BETTER AUTH — ACCOUNT
-// Why: Required by Better Auth. Handles Google OAuth + email.
 // ======================================================
 
 model Account {
@@ -236,7 +375,6 @@ model Account {
 
 // ======================================================
 // BETTER AUTH — VERIFICATION
-// Why: Required by Better Auth. Email verification tokens.
 // ======================================================
 
 model Verification {
@@ -255,8 +393,7 @@ model Verification {
 // ======================================================
 // JOB PROFILE
 // Why: The primary preparation journey object.
-//      "I am preparing for this specific role."
-//      One user can have multiple profiles (Frontend + Backend etc.)
+//      One user → many profiles (Frontend, Backend, etc.)
 //      All interviews and resumes live inside a profile.
 // ======================================================
 
@@ -266,8 +403,8 @@ model JobProfile {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title       String // e.g. "Frontend Engineer at Startups"
-  targetRole  String // e.g. "Frontend Engineer"
+  title       String  // e.g. "Frontend Engineer at Startups"
+  targetRole  String  // e.g. "Frontend Engineer"
   description String? // optional notes about the preparation goal
 
   experienceLevel ExperienceLevel
@@ -275,7 +412,6 @@ model JobProfile {
 
   // Points to the resume snapshot used for future interviews.
   // Null until first resume is uploaded.
-  // Updated when user uploads a new resume for this profile.
   activeResumeId String? @unique
   activeResume   Resume? @relation("ActiveResume", fields: [activeResumeId], references: [id])
 
@@ -284,7 +420,6 @@ model JobProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   resumes    Resume[]
   interviews Interview[]
 
@@ -296,9 +431,9 @@ model JobProfile {
 // ======================================================
 // RESUME SNAPSHOT
 // Why: Each upload creates a NEW immutable snapshot.
-//      Interviews are frozen against the snapshot they were generated from.
-//      Guarantees historical correctness and reproducible reports.
-//      The parsed JSON is the source of truth — file is optional.
+//      Interviews are frozen against the snapshot they
+//      were generated from. Guarantees historical
+//      correctness and reproducible reports.
 // ======================================================
 
 model Resume {
@@ -307,19 +442,15 @@ model Resume {
   jobProfileId String
   jobProfile   JobProfile @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
 
-  // File storage — optional (you may delete file after extraction)
-  fileKey  String? // disk path or R2 key
-  fileUrl  String? // local path or signed URL
-  fileName String? // original filename for display
+  fileKey  String?
+  fileUrl  String?
+  fileName String?
 
-  // Version increments per upload within a job profile
   version Int @default(1)
 
-  // Parsing state
   parseStatus JobStatus @default(PENDING)
   parseError  String?
 
-  // Extracted content
   rawText       String @db.Text
   rawTextLength Int?
 
@@ -331,10 +462,7 @@ model Resume {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Interviews frozen against this snapshot
-  interviews Interview[]
-
-  // Back-relation for JobProfile.activeResume
+  interviews          Interview[]
   activeForJobProfile JobProfile? @relation("ActiveResume")
 
   @@index([jobProfileId])
@@ -344,9 +472,9 @@ model Resume {
 
 // ======================================================
 // INTERVIEW
-// Why: Core product entity. One interview session end-to-end.
-//      Frozen against one resume snapshot.
-//      Contains the full adaptive conversation + activities + report.
+// Why: Core product entity. One end-to-end interview session.
+//      Frozen against one resume snapshot and one config snapshot.
+//      Contains the adaptive question sequence and final report.
 // ======================================================
 
 model Interview {
@@ -358,48 +486,64 @@ model Interview {
   jobProfileId String
   jobProfile   JobProfile @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
 
-  // Frozen resume snapshot — never changes after interview creation
+  // Frozen resume snapshot — never changes after creation
   resumeId String
   resume   Resume @relation(fields: [resumeId], references: [id])
 
+  // Resume parsedData copied at creation time
+  // Prevents issues if the resume record is later deleted
+  resumeSnapshot Json?
+
   // Interview classification
-  type InterviewType @default(FULL)
-  mode InterviewMode @default(MIXED)
-
-  // Candidate chose: 'technical_only' | 'hr_technical' | 'full'
-  // Stored separately because InterviewType maps role, not format
-  interviewFormat String @default("full")
-
+  type   InterviewType @default(FULL)
+  mode   InterviewMode @default(MIXED)
   status InterviewStatus @default(PENDING)
 
   title String? // e.g. "Frontend Engineer — Round 2"
 
-  // Pre-generated plan from AI planner before first question
-  interviewPlan Json?
-  planGenerated Boolean @default(false)
+  // ── CONFIG SNAPSHOT ──────────────────────────────────────
+  // Full copy of InterviewConfig frozen at creation time.
+  // Admin config changes never affect in-progress interviews.
+  configSnapshot Json
+  configId       String? // reference to which config was used (for analytics)
 
-  // Progress tracking
-  totalQuestions      Int @default(8)
-  currentTurnIndex    Int @default(0)
+  // ── DIFFICULTY ───────────────────────────────────────────
+  // Candidate's chosen difficulty progression
+  // Must be within allowedDifficultyModes from the config
+  difficultyProgression DifficultyProgression @default(ADAPTIVE)
+
+  // ── INTERVIEW PLAN ───────────────────────────────────────
+  // Pre-generated topic intents and sequence.
+  // Question text is generated dynamically per HYBRID mode.
+  interviewPlan  Json?
+  planGenerated  Boolean @default(false)
+
+  // ── PROGRESS ─────────────────────────────────────────────
+  totalQuestions      Int @default(8) // copied from config.targetTurns
+  currentQuestionIndex Int @default(0) // which InterviewQuestion is ACTIVE
   activitiesCompleted Int @default(0)
   activitiesPlanned   Int @default(0)
 
-  // Scores — populated progressively, finalised in report
+  // ── PAUSE / RESUME ───────────────────────────────────────
+  pauseCount    Int       @default(0)
+  maxPauseCount Int       // copied from config at creation
+  pausedAt      DateTime?
+  pauseReason   PauseReason?
+  resumeDeadline DateTime? // pausedAt + config.resumeDeadlineHours
+
+  // ── SCORES (progressive, finalised in report) ────────────
   overallScore       Int?
   communicationScore Int?
   technicalScore     Int?
   confidenceScore    Int?
   authenticityScore  Int? // cross-validates resume claims vs interview answers
 
-  // Aggregated after report generation
+  // ── AGGREGATED AFTER REPORT ──────────────────────────────
   feedback     String?
   weakTopics   String[]
   strongTopics String[]
 
-  // Realtime channel — required for Ably state sync + recovery
-  ablyChannelId String?
-
-  // Timing
+  // ── TIMING ───────────────────────────────────────────────
   durationSeconds Int?
   startedAt       DateTime?
   completedAt     DateTime?
@@ -408,8 +552,7 @@ model Interview {
   updatedAt DateTime @updatedAt
 
   // Relations
-  turns       InterviewTurn[]
-  activities  InterviewActivity[]
+  questions   InterviewQuestion[]
   analytics   InterviewAnalytics?
   report      InterviewReport?
   suggestions ImprovementSuggestion[]
@@ -423,148 +566,176 @@ model Interview {
 }
 
 // ======================================================
-// INTERVIEW TURN
-// Why: Every question-answer exchange stored individually.
-//      The conversational intelligence layer.
-//      Powers adaptive follow-ups, scoring, and fine-tuning data.
+// INTERVIEW QUESTION (Topic / Thread)
+// Why: Each planned question is a self-contained topic.
+//      All turns for that question live inside it.
+//      Follow-ups, clarifications, hints — all scoped here.
+//      Judge result lives here. Only summaries cross topics.
+//
+//      This is the core architectural unit of the interview.
+//      The quota counter is questionIndex — follow-up turns
+//      never increment it.
 // ======================================================
 
-model InterviewTurn {
-  id String @id @default(cuid())
-
+model InterviewQuestion {
+  id          String    @id @default(cuid())
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 
-  turnIndex Int
+  // 1..N — the quota counter. Activities count toward this total.
+  // Follow-up turns inside a topic do NOT increment this.
+  questionIndex Int
 
-  // TurnRole.AI = interviewer question | TurnRole.USER = candidate answer
-  role TurnRole
+  type QuestionType // QA | ACTIVITY
 
-  // Question metadata (AI turns only)
-  questionCategory    QuestionCategory?
-  questionDifficulty  QuestionDifficulty?
-  psychologicalIntent PsychologicalIntent?
-  targetSkills        String[]
+  // ── PLANNED AT CREATION (always present) ─────────────────
+  // These are fixed when the interview plan is generated.
+  plannedIntent    PsychologicalIntent?
+  plannedCategory  QuestionCategory?
+  targetSkills     String[]
+  plannedDifficulty QuestionDifficulty?
 
-  // Content
-  question String? @db.Text // populated on AI turns
-  answer   String? @db.Text // populated on USER turns
+  // ── GENERATED WHEN TOPIC OPENS (HYBRID mode) ─────────────
+  // Null until this question becomes ACTIVE.
+  // Generated using prior topic summaries + planned intent.
+  questionText String? @db.Text
 
-  // How the candidate responded
-  inputMode InputMode?
+  // ── ACTIVITY-ONLY FIELDS ─────────────────────────────────
+  activityType   ActivityType?
+  codeSnippet    String?       @db.Text // shown to candidate in code editor
+  expectedAnswer String?       @db.Text // NEVER sent to client — judge reads internally
 
-  // For code activities
-  codeSnippetShown  String? @db.Text // code shown to candidate (read-only)
-  codeEditorContent String? @db.Text // code written/edited by candidate
+  // ── TIMING ───────────────────────────────────────────────
+  timeLimitSeconds Int  // copied from config at creation per question type
+  remainingSeconds Int? // saved on pause — restored on resume
 
-  // Voice metadata
-  audioKey           String?
-  silenceDurationMs  Int? // pause before candidate started speaking
-  hesitationDetected Boolean @default(false)
-  speechDurationMs   Int? // how long candidate spoke
+  // ── STATE ────────────────────────────────────────────────
+  status      TopicStatus      @default(PENDING)
+  closeReason TopicCloseReason?
 
-  // Follow-up tracking
-  isFollowUp     Boolean @default(false)
-  followUpReason String? // 'shallow_answer' | 'hesitation' | 'resume_claim' | 'pressure'
+  startedAt DateTime?
+  closedAt  DateTime?
 
-  // Per-turn scoring (scored on the AI's next turn after reviewing the answer)
-  turnScore   Int? // 0–100
-  topicScored String? // which JS topic this answer was scored against
+  // ── JUDGE RESULT ─────────────────────────────────────────
+  // Populated async after topic closes.
+  // Judge runs in parallel with next question streaming.
+  // Must complete before this topic's summary is needed (always has time).
+  judgeSummary    String? @db.Text // 1–2 sentence summary carried forward as context
+  judgeScore      Int?    // 0–100
+  judgeStrengths  String[]
+  judgeWeaknesses String[]
 
-  // Cost tracking
+  judgePending    Boolean  @default(false) // true while judge job is running
+  judgeRetryCount Int      @default(0)     // auto-retried up to 3 times on failure
+  judgedAt        DateTime?
+
+  turns InterviewTurn[]
+
+  @@index([interviewId])
+  @@index([interviewId, questionIndex])
+  @@index([interviewId, status])
+}
+
+// ======================================================
+// INTERVIEW TURN
+// Why: Every single exchange inside a topic — question,
+//      answer, follow-up, clarification, hint, code submission.
+//      Unified content field: voice transcript, typed text,
+//      and code submissions all land in one place.
+//      No redundant parallel fields. Single source of truth.
+// ======================================================
+
+model InterviewTurn {
+  id                  String            @id @default(cuid())
+  interviewQuestionId String
+  interviewQuestion   InterviewQuestion @relation(fields: [interviewQuestionId], references: [id], onDelete: Cascade)
+
+  // Denormalized for efficient querying across the full interview
+  interviewId String
+
+  turnIndex Int // sequential within this question/topic
+
+  role     TurnRole // AI | USER
+  turnType TurnType // what kind of exchange this is
+
+  // ── UNIFIED CONTENT ──────────────────────────────────────
+  // Voice transcript, typed text, and code all land here.
+  // turnType tells you how to interpret it.
+  content String? @db.Text
+
+  // ── AI TURN METADATA ─────────────────────────────────────
+  moveToNext         Boolean    @default(false) // AI signals this topic should close
+  suggestedInputMode InputMode?                 // what input the AI expects next
+  timeLimitSeconds   Int?                       // how long candidate has to respond
+
+  // ── PERFORMANCE ──────────────────────────────────────────
+  latencyMs          Int? // server-side: time from request to first token
+  streamingLatencyMs Int? // time from action call to first token on client
   tokenUsage         Int?
-  latencyMs          Int?
-  streamingLatencyMs Int?
 
   createdAt DateTime @default(now())
 
+  @@index([interviewQuestionId])
   @@index([interviewId])
   @@index([interviewId, turnIndex])
 }
 
 // ======================================================
-// INTERVIEW ACTIVITY
-// Why: Practical mini-evaluation tasks mid-interview.
-//      One of the core product differentiators.
-//      Breaks robotic Q&A flow with real engineering scenarios.
-// ======================================================
-
-model InterviewActivity {
-  id String @id @default(cuid())
-
-  interviewId String
-  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-
-  activityIndex Int // order within the interview
-
-  type ActivityType
-
-  title  String?
-  prompt String  @db.Text // the scenario or question shown to candidate
-
-  // For code activities
-  codeSnippet    String? @db.Text // shown to candidate
-  expectedAnswer String? @db.Text // internal only — never sent to client
-
-  // Candidate responses
-  candidateVoiceAnswer String? @db.Text // STT transcript
-  candidateCodeAnswer  String? @db.Text // from react-simple-code-editor
-  candidateTextAnswer  String? @db.Text // from textarea
-
-  // Evaluation
-  score           Int? // 0–100
-  evaluation      Json? // ActivityEvaluation struct
-  skillsEvaluated String[]
-
-  // State
-  startedAt   DateTime?
-  completedAt DateTime?
-  skipped     Boolean   @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([interviewId])
-  @@index([interviewId, activityIndex])
-}
-
-// ======================================================
 // INTERVIEW REPORT
-// Why: The core user payoff. Generated async after interview completion.
-//      One report per interview. Contains the full evaluation.
+// Why: The core user payoff. Generated async after completion.
+//      Report generator reads only judge summaries per topic —
+//      never raw turns. This keeps the prompt small, fast,
+//      and accurate regardless of interview length.
 // ======================================================
 
 model InterviewReport {
-  id String @id @default(cuid())
-
+  id          String    @id @default(cuid())
   interviewId String    @unique
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  userId      String
 
-  userId String
-
-  // Headline scores
+  // ── HEADLINE SCORES ───────────────────────────────────────
   overallScore       Int
   communicationScore Int
   technicalScore     Int
   confidenceScore    Int
   authenticityScore  Int? // null if no resume claims were testable
 
-  // Narrative
+  // ── NARRATIVE ────────────────────────────────────────────
   performanceSummary String @db.Text // 2–3 sentence honest verdict
   readinessLevel     String // 'not_ready' | 'needs_work' | 'almost_ready' | 'ready'
   readinessSummary   String @db.Text // 1 sentence
 
-  // Structured data — typed in packages/shared/src/types/report.ts
+  // ── STRUCTURED DATA ───────────────────────────────────────
   topStrengths String[] // max 3
 
-  weakTopics    Json // WeakTopic[] — topic, score, evidence, improvement
-  topicAnalysis Json // TopicAnalysis[] — topic, score, trend note
+  // WeakTopic[]      — topic, score, evidence, improvement
+  weakTopics Json
 
-  activitySummary Json? // ActivitySummary[] — type, score, note
+  // TopicAnalysis[]  — topic, score, trend note
+  // Capped by config.maxTopicsInReport
+  topicAnalysis Json
 
-  communicationAnalysis Json // CommunicationAnalysis struct
-  confidenceAnalysis    Json // ConfidenceAnalysis struct
-  authenticityAnalysis  Json? // AuthenticityAnalysis struct — null if no claims tested
+  // ActivitySummary[] — type, score, note
+  // Null if config.includeActivityReport = false
+  activitySummary Json?
+
+  // CommunicationAnalysis struct
+  communicationAnalysis Json
+
+  // ConfidenceAnalysis struct
+  confidenceAnalysis Json
+
+  // AuthenticityAnalysis struct — null if no claims were tested
+  // Only present if config.includeAuthAnalysis = true
+  authenticityAnalysis Json?
+
+  // Per-question breakdown — only present if reportDepth >= DETAILED
+  // QuestionBreakdown[] — question summary, score, strengths, weaknesses
+  questionBreakdown Json?
+
+  // Report depth used to generate this report (from config snapshot)
+  reportDepth ReportDepth
 
   generatedAt DateTime @default(now())
   createdAt   DateTime @default(now())
@@ -576,34 +747,30 @@ model InterviewReport {
 // ======================================================
 // IMPROVEMENT SUGGESTION
 // Why: Post-interview actionable guidance.
-//      Instead of LMS: "Open in ChatGPT / Claude" with deep prompts.
-//      Keeps MVP lean while still delivering learning value.
+//      V1 mechanic: a detailed prompt the candidate pastes
+//      into ChatGPT or Claude for deep learning on weak topics.
 // ======================================================
 
 model ImprovementSuggestion {
-  id String @id @default(cuid())
-
+  id          String    @id @default(cuid())
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  userId      String
 
-  // Direct userId index for cross-interview queries (future)
-  userId String
-
-  topic    String // 'async-js' | 'react-performance' | etc.
+  topic    String              // 'async-js' | 'react-performance' etc.
   priority ImprovementPriority
 
   title       String
   description String @db.Text // why this matters for their target role
 
-  // The main V1 learning mechanic:
-  // A detailed prompt the candidate pastes into ChatGPT or Claude
+  // Main V1 learning mechanic:
+  // Detailed prompt candidate pastes into ChatGPT or Claude
   learningPrompt String? @db.Text
 
-  // Optional direct resource link
   externalUrl String?
 
-  // Which turns triggered this suggestion
-  relatedTurnIds String[]
+  // Which question indices triggered this suggestion
+  relatedQuestionIds String[]
 
   dismissed Boolean @default(false)
 
@@ -619,12 +786,11 @@ model ImprovementSuggestion {
 // INTERVIEW ANALYTICS
 // Why: Operational metrics per interview.
 //      Token costs, latency, voice behaviour.
-//      Powers cost monitoring and future optimisation.
+//      Powers cost monitoring and model comparison.
 // ======================================================
 
 model InterviewAnalytics {
-  id String @id @default(cuid())
-
+  id          String    @id @default(cuid())
   interviewId String    @unique
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 
@@ -636,19 +802,18 @@ model InterviewAnalytics {
   avgLatencyMs    Int?
   avgAiLatencyMs  Int?
   avgSttLatencyMs Int?
-  avgTtsLatencyMs Int?
 
   // Voice behaviour
   totalSpeakingSeconds Int?
   totalSilenceSeconds  Int?
-  interruptionCount    Int?
   hesitationCount      Int?
   avgAnswerDurationMs  Int?
 
   // Completion
-  abandonedAtTurn     Int?
+  abandonedAtQuestion Int?   // questionIndex where candidate left
   completionRate      Float?
   activitiesCompleted Int?
+  pauseCount          Int?
 
   createdAt DateTime @default(now())
 }
@@ -656,8 +821,10 @@ model InterviewAnalytics {
 // ======================================================
 // INTERVIEW CREDIT
 // Why: Credit units that gate interview access.
-//      Free signup = 1 credit. Paid sessions = purchased credits.
+//      Free signup = 1 credit. Paid = purchased credits.
 //      Decoupled from subscriptions for flexibility.
+//      Credit consumed when first question is DELIVERED —
+//      not on creation, not on plan generation.
 // ======================================================
 
 model InterviewCredit {
@@ -681,7 +848,7 @@ model InterviewCredit {
 // ======================================================
 // PAYMENT
 // Why: Every Razorpay transaction recorded.
-//      Source of truth for billing disputes and reconciliation.
+//      Source of truth for billing disputes.
 // ======================================================
 
 model Payment {
@@ -690,7 +857,7 @@ model Payment {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  amountPaise Int // stored in paise for precision (₹49 = 4900)
+  amountPaise Int    // stored in paise for precision (₹49 = 4900)
   currency    String @default("INR")
 
   provider          String  @default("razorpay")
@@ -703,7 +870,7 @@ model Payment {
   planName       String? // 'session_single' | 'basic_monthly' | 'pro_monthly'
   creditsGranted Int?
 
-  metadata Json? // razorpay notes, webhook payload
+  metadata Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -716,7 +883,8 @@ model Payment {
 // ======================================================
 // SUBSCRIPTION
 // Why: Monthly/annual plan tracking.
-//      Determines how many credits are granted and when.
+//      Determines which InterviewConfig applies and how
+//      many credits are granted per period.
 // ======================================================
 
 model Subscription {
@@ -725,7 +893,11 @@ model Subscription {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  planName String // 'basic_monthly' | 'pro_monthly'
+  planName String // 'basic_monthly' | 'pro_monthly' | 'enterprise'
+
+  // Points to the InterviewConfig name for this plan
+  // e.g. "pro" → InterviewConfig where name = "pro"
+  configName String?
 
   status         SubscriptionStatus
   interviewsLeft Int                @default(0)
@@ -747,7 +919,7 @@ model Subscription {
 // ======================================================
 // AUDIT LOG
 // Why: Security trail. Debugging. Admin review.
-//      Record sensitive actions (credit grants, role changes etc.)
+//      Record sensitive actions (credit grants, role changes)
 // ======================================================
 
 model AuditLog {
@@ -756,8 +928,8 @@ model AuditLog {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
-  action   String // 'interview.created' | 'credit.granted' | 'role.changed' etc.
-  entity   String? // model name: 'Interview' | 'User' | 'Payment'
+  action   String  // 'interview.created' | 'credit.granted' | 'role.changed'
+  entity   String? // 'Interview' | 'User' | 'Payment'
   entityId String?
 
   metadata  Json?
@@ -773,13 +945,13 @@ model AuditLog {
 // ======================================================
 // FEATURE FLAG
 // Why: Controlled rollout without code deploys.
-//      e.g. TTS, voice mode, new activity types.
 // ======================================================
 
 model FeatureFlag {
   id String @id @default(cuid())
 
   key      String  @unique
+// e.g. 'voice_mode' | 'activity_hints' | 'report_exhaustive'
   enabled  Boolean @default(false)
   metadata Json?
 
@@ -789,6 +961,6 @@ model FeatureFlag {
 
 // ======================================================
 // RECRUITER PROFILE (Phase 5 stub)
-// Why: Schema exists now so future migration is additive not breaking.
+// Why: Schema exists now so future migration is additive.
 //      No recruiter features in V1.
 // ======================================================

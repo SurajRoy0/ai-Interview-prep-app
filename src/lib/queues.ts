@@ -16,11 +16,6 @@ export const resumeQueue =
   globalForQueues.resumeQueue ||
   new Queue(QUEUE_NAMES.RESUME_PROCESSING, { connection })
 
-export const reportQueue =
-  globalForQueues.reportQueue ||
-  new Queue(QUEUE_NAMES.INTERVIEW_REPORT, { connection })
-
 if (process.env.NODE_ENV !== 'production') {
   globalForQueues.resumeQueue = resumeQueue
-  globalForQueues.reportQueue = reportQueue
 }

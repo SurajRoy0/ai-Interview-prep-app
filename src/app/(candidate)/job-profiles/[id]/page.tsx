@@ -199,7 +199,7 @@ export default async function JobProfileDetailPage({
                 className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl font-bold text-sm h-12 shadow-sm"
               >
                 {hasActiveResume ? (
-                  <Link href={`/interview/ready/${profile.activeResumeId}`}>Start Interview</Link>
+                  <Link href={`#`}>Start Interview</Link>
                 ) : (
                   <span>Start Interview</span>
                 )}
@@ -229,7 +229,7 @@ export default async function JobProfileDetailPage({
                 {profile.interviews.map(interview => (
                   <Link
                     key={interview.id}
-                    href={`/interview/${interview.id}`}
+                    href={`#`}
                     className="flex items-center justify-between group bg-surface-2 hover:bg-surface-3 border border-border/40 p-3 rounded-xl transition-all duration-200"
                   >
                     <div className="flex items-center gap-3">
