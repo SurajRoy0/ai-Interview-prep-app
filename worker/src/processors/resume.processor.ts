@@ -1,5 +1,5 @@
 import { Job } from 'bullmq'
-import { prisma } from '@repo/db'
+import { prisma, getUserActivePlanConfig } from '@repo/db'
 import { parseResumeWithAI } from '@repo/ai'
 import type { ParsedResume } from '@repo/shared'
 
@@ -25,17 +25,7 @@ export async function processResumeJob(job: Job<{ resumeId: string }>) {
   })
 
   try {
-    let config = await prisma.planConfig.findFirst({ where: { isDefault: true } })
-    const subscription = await prisma.subscription.findFirst({
-      where: { userId: resume.jobProfile.userId, status: "ACTIVE" },
-      include: { plan: { include: { planConfig: true } } }
-    })
-    
-    if (subscription?.plan?.planConfig) {
-      config = subscription.plan.planConfig
-    }
-    
-    if (!config) throw new Error("No plan configuration found")
+    const config = await getUserActivePlanConfig(resume.jobProfile.userId)
 
     const parsedData: ParsedResume = await parseResumeWithAI(
       resume.rawText,

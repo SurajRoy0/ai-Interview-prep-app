@@ -193,7 +193,9 @@ enum SubscriptionStatus {
 }
 
 enum BillingInterval {
+  ONE_TIME
   MONTHLY
+  QUARTERLY
   YEARLY
 }
 
@@ -322,9 +324,8 @@ model Plan {
   description String? // optional tagline for the pricing page
 
   // Pricing — stored in paise (1 INR = 100 paise). Null for free tier.
-  priceMonthlyPaise Int?
-  priceYearlyPaise  Int?
-  billingInterval   BillingInterval @default(MONTHLY)
+  amountPaise     Int?
+  billingInterval BillingInterval @default(ONE_TIME)
 
   // Credits granted at the start of each billing period
   // or immediately on one-time purchase

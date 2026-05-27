@@ -5,9 +5,8 @@ export const planSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
   description: z.string().optional().nullable(),
   
-  priceMonthlyPaise: z.coerce.number().min(0).optional().nullable(),
-  priceYearlyPaise: z.coerce.number().min(0).optional().nullable(),
-  billingInterval: z.enum(["MONTHLY", "YEARLY"]).default("MONTHLY"),
+  amountPaise: z.coerce.number().min(0).optional().nullable(),
+  billingInterval: z.enum(["ONE_TIME", "MONTHLY", "QUARTERLY", "YEARLY"]).default("ONE_TIME"),
   
   interviewCredits: z.coerce.number().min(0).default(1),
   
