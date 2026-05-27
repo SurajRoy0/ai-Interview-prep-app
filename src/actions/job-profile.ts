@@ -27,8 +27,8 @@ export async function createJobProfileAction(
       },
     })
 
-    revalidatePath('/dashboard')
-    revalidatePath('/job-profiles')
+    revalidatePath('/candidate/dashboard')
+    revalidatePath('/candidate/job-profiles')
 
     return success({ id: profile.id })
   } catch (error) {

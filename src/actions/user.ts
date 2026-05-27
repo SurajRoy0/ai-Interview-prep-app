@@ -3,6 +3,7 @@
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
 import { cache } from 'react'
+import { redirect } from 'next/navigation'
 
 export const getTotalCreditsAction = cache(async () => {
   const session = await getSession()
@@ -31,7 +32,7 @@ export const getTotalCreditsAction = cache(async () => {
 export const getDashboardStatsAction = async () => {
   const session = await getSession()
   if (!session) {
-    throw new Error('Unauthorized')
+    redirect('/login')
   }
 
   const [interviewsCount, resumeCount] = await Promise.all([

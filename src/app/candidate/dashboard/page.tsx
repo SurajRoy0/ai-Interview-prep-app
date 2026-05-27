@@ -113,7 +113,7 @@ export default async function DashboardPage() {
             </div>
             <h3 className="font-bold text-lg leading-tight mb-4">Ready to practice?</h3>
             <Button asChild size="sm" className="bg-background text-foreground hover:bg-background/90 rounded-full gap-1.5 font-semibold text-xs h-8">
-              <Link href="/job-profiles">
+              <Link href="/candidate/job-profiles">
                 Start Interview <ArrowRight className="h-3 w-3" />
               </Link>
             </Button>
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2">
             {totalCount > 0 && (
               <Button asChild variant="outline" size="sm" className="rounded-full h-8 text-xs border-border/60">
-                <Link href="/job-profiles">View all</Link>
+                <Link href="/candidate/job-profiles">View all</Link>
               </Button>
             )}
             <CreateProfileDialog>
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
               return (
                 <Link
                   key={profile.id}
-                  href={`/job-profiles/${profile.id}`}
+                  href={`/candidate/job-profiles/${profile.id}`}
                   className="group bg-card border border-border/50 hover:border-primary/35 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:shadow-primary/5 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between gap-3">

@@ -6,6 +6,7 @@ import { getTotalCreditsAction } from '@/actions/user'
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession().catch(() => null)
   if (!session) redirect('/login')
+  if (session.user.role === 'ADMIN') redirect('/admin/dashboard')
 
   const totalCredits = await getTotalCreditsAction()
 

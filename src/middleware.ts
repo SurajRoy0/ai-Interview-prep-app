@@ -48,7 +48,7 @@ export async function middleware(req: NextRequest) {
 
   // Redirect authenticated users away from auth-only pages
   if (AUTH_ONLY_PATHS.some(p => pathname.startsWith(p)) && loggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+    return NextResponse.redirect(new URL('/candidate/dashboard', req.url))
   }
 
   // Public paths — anyone can access

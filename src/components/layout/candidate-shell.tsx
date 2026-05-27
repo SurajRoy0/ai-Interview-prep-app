@@ -35,10 +35,10 @@ import { ThemeToggle } from "../shared/theme-toggle"
 // Billing and settings are standalone pages
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/job-profiles", label: "Job Profiles", icon: Briefcase },
-  { href: "/billing", label: "Billing", icon: CreditCard },
-  { href: "/settings", label: "Settings", icon: Settings2 },
+  { href: "/candidate/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/candidate/job-profiles", label: "Job Profiles", icon: Briefcase },
+  { href: "/candidate/billing", label: "Billing", icon: CreditCard },
+  { href: "/candidate/settings", label: "Settings", icon: Settings2 },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
   }
 
   const isActive = (href: string) =>
-    href === "/dashboard"
+    href === "/candidate/dashboard"
       ? pathname === href
       : pathname.startsWith(href)
 
@@ -81,7 +81,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
         <header className="sticky top-0 z-50 h-14 border-b border-border/50 glass flex items-center justify-between px-4 md:px-6">
 
           {/* Left — Logo */}
-          <Logo size="sm" showName href="/dashboard" />
+          <Logo size="sm" showName href="/candidate/dashboard" />
 
           {/* Center — Nav (desktop) */}
           <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
@@ -115,7 +115,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
           {/* Right — Actions */}
           <div className="flex items-center gap-2">
             {/* Header Credits Pill */}
-            <Link href="/billing" className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors">
+            <Link href="/candidate/billing" className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors">
               <Coins className="h-3.5 w-3.5" />
               {totalCredits} {totalCredits === 1 ? 'Credit' : 'Credits'}
             </Link>
@@ -141,12 +141,12 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{session.user.email}</p>
                 </div>
                 <DropdownMenuItem asChild>
-                  <Link href="/settings" className="flex items-center gap-2 cursor-pointer mt-1">
+                  <Link href="/candidate/settings" className="flex items-center gap-2 cursor-pointer mt-1">
                     <User className="h-3.5 w-3.5" /> Account Settings
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/billing" className="flex items-center gap-2 cursor-pointer">
+                  <Link href="/candidate/billing" className="flex items-center gap-2 cursor-pointer">
                     <CreditCard className="h-3.5 w-3.5" /> Billing & Plans
                   </Link>
                 </DropdownMenuItem>
@@ -172,7 +172,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
               </SheetTrigger>
               <SheetContent side="right" className="w-64 flex flex-col">
                 <div className="pt-4 mb-6">
-                  <Logo size="sm" showName href="/dashboard" />
+                  <Logo size="sm" showName href="/candidate/dashboard" />
                 </div>
                 <nav className="flex flex-col gap-1 flex-1">
                   {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
@@ -194,7 +194,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
                     )
                   })}
                   <Button asChild size="sm" className="rounded-full mt-3 gap-2 shadow-primary-glow">
-                    <Link href="/job-profiles">
+                    <Link href="/candidate/job-profiles">
                       <Plus className="h-4 w-4" /> New Interview
                     </Link>
                   </Button>

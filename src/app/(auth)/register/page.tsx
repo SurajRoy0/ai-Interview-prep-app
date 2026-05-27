@@ -50,7 +50,7 @@ export default function RegisterPage() {
     try {
       const { error } = await signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: "/candidate/dashboard",
       })
       if (error) {
         toast.error(error.message || "Failed to start Google sign-up.")

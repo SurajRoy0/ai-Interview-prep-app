@@ -233,7 +233,7 @@ export function HomePage({ session }: HomePageProps) {
                 size="lg"
                 className="h-13 px-8 rounded-full text-base font-semibold shadow-primary-glow hover:opacity-90 transition-opacity group"
               >
-                <Link href={session ? "/dashboard" : "/register"} className="flex items-center gap-2">
+                <Link href={session ? "/candidate/dashboard" : "/register"} className="flex items-center gap-2">
                   {session ? "Go to Dashboard" : "Start free interview"}
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -579,7 +579,7 @@ export function HomePage({ session }: HomePageProps) {
                 One free session. No credit card. An honest report that shows exactly what a real interviewer would think of your answers.
               </p>
               <Button asChild size="lg" className="h-14 px-10 rounded-full text-base font-semibold shadow-primary-glow hover:opacity-90 transition-opacity">
-                <Link href={session ? "/dashboard" : "/register"} className="flex items-center gap-2">
+                <Link href={session ? "/candidate/dashboard" : "/register"} className="flex items-center gap-2">
                   {session ? "Go to Dashboard" : "Start your free interview"}
                   <ArrowRight className="h-4 w-4" />
                 </Link>

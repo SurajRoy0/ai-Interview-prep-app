@@ -63,7 +63,7 @@ export default async function JobProfileDetailPage({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border/50 pb-6">
         <div className="flex items-start gap-4">
           <Link
-            href="/dashboard"
+            href="/candidate/dashboard"
             className="mt-1 flex items-center justify-center h-8 w-8 rounded-full hover:bg-surface-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
             title="Back to Dashboard"
           >
@@ -144,7 +144,7 @@ export default async function JobProfileDetailPage({
                       <PaginationContent>
                         <PaginationItem>
                           <PaginationPrevious
-                            href={`/job-profiles/${profile.id}?resumePage=${Math.max(1, currentPage - 1)}`}
+                            href={`/candidate/job-profiles/${profile.id}?resumePage=${Math.max(1, currentPage - 1)}`}
                             className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
@@ -155,7 +155,7 @@ export default async function JobProfileDetailPage({
                           return (
                             <PaginationItem key={pNum}>
                               <PaginationLink
-                                href={`/job-profiles/${profile.id}?resumePage=${pNum}`}
+                                href={`/candidate/job-profiles/${profile.id}?resumePage=${pNum}`}
                                 isActive={isCurrent}
                               >
                                 {pNum}
@@ -166,7 +166,7 @@ export default async function JobProfileDetailPage({
 
                         <PaginationItem>
                           <PaginationNext
-                            href={`/job-profiles/${profile.id}?resumePage=${Math.min(totalResumePages, currentPage + 1)}`}
+                            href={`/candidate/job-profiles/${profile.id}?resumePage=${Math.min(totalResumePages, currentPage + 1)}`}
                             className={currentPage >= totalResumePages ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
