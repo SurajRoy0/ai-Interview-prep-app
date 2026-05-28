@@ -225,7 +225,7 @@ export default async function JobProfileDetailPage({
                 {profile.interviews.map((interview) => (
                   <Link
                     key={interview.id}
-                    href={`#`}
+                    href={`/candidate/interview/${interview.id}`}
                     className="flex items-center justify-between group bg-surface-2 hover:bg-surface-3 border border-border/40 p-3 rounded-xl transition-all duration-200"
                   >
                     <div className="flex items-center gap-3">
@@ -233,9 +233,19 @@ export default async function JobProfileDetailPage({
                         <CheckCircle2 className="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
-                          {interview.title || "Mock Interview"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
+                            {interview.title || "Mock Interview"}
+                          </p>
+                          <Badge variant="outline" className={`text-[9px] h-4 px-1.5 font-semibold ${
+                            interview.status === 'COMPLETED' ? 'border-green-500/50 text-green-600' :
+                            interview.status === 'ACTIVE' || interview.status === 'PAUSED' ? 'border-blue-500/50 text-blue-600' :
+                            interview.status === 'FAILED' ? 'border-destructive/50 text-destructive' :
+                            'border-muted-foreground/30 text-muted-foreground'
+                          }`}>
+                            {interview.status}
+                          </Badge>
+                        </div>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 uppercase tracking-wider font-medium">
                           <Calendar className="w-3 h-3" />
                           {new Date(interview.createdAt).toLocaleDateString()}
