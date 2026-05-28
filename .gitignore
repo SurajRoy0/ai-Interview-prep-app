@@ -23,7 +23,7 @@ build/
 # misc
 .DS_Store
 *.pem
-INTERVIEW_ARCHITECTURE.md
+PLAN.md
 
 # debug
 npm-debug.log*
