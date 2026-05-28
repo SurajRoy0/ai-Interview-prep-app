@@ -1,7 +1,7 @@
 import { requireSession } from '@/lib/auth-server'
 import { redirect } from 'next/navigation'
 import { CandidateShell } from '@/components/candidate/candidate-shell'
-import { getTotalCreditsAction } from '@/actions/user'
+import { getTotalCreditsAction } from '@/actions/candidate/user'
 
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession().catch(() => null)

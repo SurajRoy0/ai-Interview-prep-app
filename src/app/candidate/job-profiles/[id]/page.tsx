@@ -1,4 +1,4 @@
-import { getJobProfileByIdAction, getJobProfileResumesAction } from "@/actions/job-profile"
+import { getJobProfileByIdAction, getJobProfileResumesAction } from "@/actions/candidate/job-profile"
 import { getUserActivePlanConfig } from "@repo/db"
 import { getSession } from "@/lib/auth-server"
 import { notFound } from "next/navigation"

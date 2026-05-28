@@ -74,43 +74,42 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       {/* Ambient top glow */}
-      <div className="fixed top-0 inset-x-0 h-72 bg-gradient-to-b from-primary/6 to-transparent pointer-events-none z-0" />
+      <div className="fixed top-0 inset-x-0 h-72 bg-linear-to-b from-primary/6 to-transparent pointer-events-none z-0" />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       {!isInterviewSession && (
         <header className="sticky top-0 z-50 h-14 border-b border-border/50 glass flex items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-5">
+            <Logo size="sm" showName href="/candidate/dashboard" />
 
-          {/* Left — Logo */}
-          <Logo size="sm" showName href="/candidate/dashboard" />
-
-          {/* Center — Nav (desktop) */}
-          <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const active = isActive(href)
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "relative flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-full transition-all duration-200",
-                    active
-                      ? "text-foreground bg-surface-2 border border-border/60 shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-surface-1"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {label}
-                  {active && (
-                    <motion.span
-                      layoutId="shell-nav-active"
-                      className="absolute inset-0 rounded-full ring-1 ring-primary/25"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
-                    />
-                  )}
-                </Link>
-              )
-            })}
-          </nav>
+            <nav className="hidden md:flex items-center gap-1">
+              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+                const active = isActive(href)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "relative flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-full transition-all duration-200",
+                      active
+                        ? "text-foreground bg-surface-2 border border-border/60 shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-surface-1"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                    {active && (
+                      <motion.span
+                        layoutId="shell-nav-active"
+                        className="absolute inset-0 rounded-full ring-1 ring-primary/25"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                      />
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
 
           {/* Right — Actions */}
           <div className="flex items-center gap-2">

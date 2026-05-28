@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { createInterviewAction } from '@/actions/interview'
+import { createInterviewAction } from '@/actions/candidate/interview'
 import { toast } from 'sonner'
 import { Loader2, Briefcase, Terminal, Users, Network, MessageCircle, Zap, Shield, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -67,6 +68,11 @@ export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasA
         toast.error(result.error?.message || 'Failed to start interview')
       }
     }
+  }
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    await handleStart()
   }
 
   const difficultyOptions = [
@@ -135,15 +141,16 @@ export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasA
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Configure Session</DialogTitle>
-          <DialogDescription>
-            Tailor your upcoming mock interview to your specific needs.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden">
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Configure Session</DialogTitle>
+            <DialogDescription>
+              Tailor your upcoming mock interview to your specific needs.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-6 py-2">
+          <div className="space-y-6 py-1 pr-1 overflow-y-auto max-h-[calc(85vh-12rem)]">
 
           {/* Interview Focus */}
           <div className="space-y-3">
@@ -152,17 +159,17 @@ export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasA
               Interview Focus
             </h4>
             <Select value={interviewType} onValueChange={setInterviewType}>
-              <SelectTrigger className="w-full h-auto py-3 px-4 bg-surface-1 border-border/60 rounded-xl hover:bg-surface-2 transition-colors flex items-center justify-between">
+              <SelectTrigger className="w-full h-auto min-h-14 py-3 px-4 bg-surface-1 border-border/60 rounded-xl hover:bg-surface-2 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/30">
                 {(() => {
                   const selectedOpt = typeOptions.find(o => o.id === interviewType)
                   if (!selectedOpt) return <span className="text-muted-foreground">Select interview type...</span>
 
                   return (
-                    <div className="flex items-center gap-3 text-left w-[calc(100%-1.5rem)]">
+                    <div className="flex items-center gap-3 text-left pr-2">
                       <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         {selectedOpt.icon}
                       </div>
-                      <div className="flex flex-col truncate">
+                      <div className="flex min-w-0 flex-col">
                         <span className="font-semibold text-sm text-foreground">{selectedOpt.title}</span>
                         <span className="text-[11px] text-muted-foreground truncate">{selectedOpt.description}</span>
                       </div>
@@ -174,9 +181,9 @@ export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasA
                   <SelectValue />
                 </span>
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-border/50 shadow-xl max-h-[300px]">
+              <SelectContent position="popper" align="start" className="rounded-xl border-border/50 shadow-xl max-h-[280px]">
                 {typeOptions.map(opt => (
-                  <SelectItem key={opt.id} value={opt.id} className="py-3 px-3 focus:bg-surface-2 rounded-lg cursor-pointer w-full group">
+                  <SelectItem key={opt.id} value={opt.id} className="py-3 px-3 focus:bg-surface-2 rounded-lg cursor-pointer group">
                     <div className="flex items-center gap-3 text-left w-full">
                       <div className="w-8 h-8 rounded-full bg-surface-3 group-focus:bg-primary/10 group-focus:text-primary flex items-center justify-center shrink-0 transition-colors">
                         {opt.icon}
@@ -210,7 +217,7 @@ export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasA
                     disabled={!isAllowed}
                     onClick={() => setDifficulty(opt.id)}
                     className={cn(
-                      "flex items-start text-left gap-3 p-3 rounded-xl border transition-all duration-200 relative overflow-hidden",
+                      "flex items-start text-left gap-3 p-3 rounded-xl border transition-all duration-200 relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25",
                       isSelected
                         ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                         : "border-border/60 hover:bg-surface-2",
@@ -236,7 +243,7 @@ export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasA
 
                     {/* PRO Badge for disabled options */}
                     {!isAllowed && (
-                      <div className="absolute top-0 right-0 bg-gradient-to-r from-orange-400 to-amber-500 text-white text-[9px] font-bold uppercase tracking-widest py-0.5 px-2 rounded-bl-lg shadow-sm flex items-center gap-1">
+                      <div className="absolute top-0 right-0 z-10 bg-linear-to-r from-orange-400 to-amber-500 text-white text-[9px] font-bold uppercase tracking-widest py-0.5 px-2 rounded-bl-lg shadow-sm flex items-center gap-1">
                         <Shield className="w-2.5 h-2.5" /> PRO
                       </div>
                     )}
@@ -246,18 +253,19 @@ export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasA
             </div>
           </div>
 
-        </div>
+          </div>
 
-        <div className="pt-4 border-t border-border/40 mt-2">
-          <Button
-            className="w-full h-11 rounded-xl font-bold shadow-primary-glow"
-            disabled={isLoading}
-            onClick={handleStart}
-          >
-            {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {isLoading ? 'Creating Session...' : 'Begin Session'}
-          </Button>
-        </div>
+          <DialogFooter className="border-t border-border/40 pt-4 mx-0 mb-0 p-0 bg-transparent sm:justify-stretch">
+            <Button
+              type="submit"
+              className="w-full h-11 rounded-xl font-bold shadow-primary-glow"
+              disabled={isLoading}
+            >
+              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isLoading ? 'Creating Session...' : 'Begin Session'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

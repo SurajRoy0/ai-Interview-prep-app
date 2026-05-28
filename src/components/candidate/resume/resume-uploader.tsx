@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
-import { uploadResumeAction } from "@/actions/resume"
+import { uploadResumeAction } from "@/actions/candidate/resume"
 import { toast } from "sonner"
 import { UploadCloud, FileText, Loader2, AlertCircle, Sparkles } from "lucide-react"
 

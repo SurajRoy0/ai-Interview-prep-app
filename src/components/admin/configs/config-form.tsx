@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { configSchema, type ConfigInput, type ConfigFormInput } from "@repo/shared"
-import { createAdminConfigAction, updateAdminConfigAction, deleteAdminConfigAction } from "@/actions/admin-config"
+import { createAdminConfigAction, updateAdminConfigAction, deleteAdminConfigAction } from "@/actions/admin/config"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"

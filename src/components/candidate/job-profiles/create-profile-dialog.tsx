@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createJobProfileSchema } from "@repo/shared"
 import type { z } from "zod"
-import { createJobProfileAction } from "@/actions/job-profile"
+import { createJobProfileAction } from "@/actions/candidate/job-profile"
 import { toast } from "sonner"
 import {
   Dialog,

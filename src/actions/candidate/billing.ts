@@ -10,7 +10,7 @@ export type BillingLedgerEntry = {
   type: 'GRANT' | 'PAYMENT' | 'USAGE'
   title: string
   description: string
-  amount: number | string // Credits or Currency
+  amount: number | string
   status?: string
 }
 
@@ -19,25 +19,21 @@ export async function getBillingHistoryAction() {
   if (!session?.user?.id) return failure('Unauthorized', 'UNAUTHORIZED')
 
   try {
-    // 1. Fetch Payments
     const payments = await prisma.payment.findMany({
       where: { userId: session.user.id },
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
     })
 
-    // 2. Fetch Credit Grants
     const credits = await prisma.interviewCredit.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
     })
 
-    // 3. Fetch Interviews (Usage)
-    // Only count interviews that have progressed past PENDING (meaning credit was consumed)
     const interviews = await prisma.interview.findMany({
-      where: { 
+      where: {
         userId: session.user.id,
-        status: { notIn: ['PENDING'] }
+        status: { notIn: ['PENDING'] },
       },
       include: { jobProfile: true },
       orderBy: { createdAt: 'desc' },
@@ -45,11 +41,9 @@ export async function getBillingHistoryAction() {
 
     const ledger: BillingLedgerEntry[] = []
 
-    // Map free interview if they have used it or if they have an account
-    // Actually, we can just represent the free credit as a virtual grant at account creation time
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { createdAt: true, freeInterviewUsed: true }
+      select: { createdAt: true, freeInterviewUsed: true },
     })
 
     if (user) {
@@ -60,7 +54,7 @@ export async function getBillingHistoryAction() {
         title: 'Free Session Granted',
         description: 'Welcome bonus',
         amount: '+1 Credit',
-        status: 'SUCCESS'
+        status: 'SUCCESS',
       })
     }
 
@@ -72,7 +66,7 @@ export async function getBillingHistoryAction() {
         title: p.plan ? `Purchased: ${p.plan.displayName}` : 'Payment',
         description: 'Razorpay transaction',
         amount: `₹${(p.amountPaise / 100).toFixed(2)}`,
-        status: p.status
+        status: p.status,
       })
     }
 
@@ -84,7 +78,7 @@ export async function getBillingHistoryAction() {
         title: 'Credits Added',
         description: c.reason === 'dev_grant' ? 'Developer Grant' : (c.reason ?? 'Granted'),
         amount: `+${c.credits} Credits`,
-        status: 'SUCCESS'
+        status: 'SUCCESS',
       })
     }
 
@@ -96,11 +90,10 @@ export async function getBillingHistoryAction() {
         title: 'Interview Session',
         description: i.jobProfile.title,
         amount: '-1 Credit',
-        status: i.status === 'COMPLETED' ? 'COMPLETED' : (i.status === 'FAILED' ? 'FAILED' : 'ACTIVE')
+        status: i.status === 'COMPLETED' ? 'COMPLETED' : (i.status === 'FAILED' ? 'FAILED' : 'ACTIVE'),
       })
     }
 
-    // Sort descending by date
     ledger.sort((a, b) => b.date.getTime() - a.date.getTime())
 
     return success(ledger)

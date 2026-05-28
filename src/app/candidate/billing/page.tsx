@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Sparkles, Receipt, AlertCircle, Coins, ArrowRight, ArrowLeft } from "lucide-react"
-import { getTotalCreditsAction } from "@/actions/user"
-import { getBillingHistoryAction } from "@/actions/billing"
+import { getTotalCreditsAction } from "@/actions/candidate/user"
+import { getBillingHistoryAction } from "@/actions/candidate/billing"
 
 const PLANS = [
   {

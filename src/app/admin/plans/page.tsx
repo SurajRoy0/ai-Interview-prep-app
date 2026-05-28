@@ -1,4 +1,4 @@
-import { getAdminPlansAction } from '@/actions/admin-plan'
+import { getAdminPlansAction } from '@/actions/admin/plan'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
