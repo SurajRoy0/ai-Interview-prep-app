@@ -1,4 +1,4 @@
-import type { ZodSchema } from '@repo/validators'
+import type { ZodSchema } from '@repo/shared'
 import { AppError, type ApiResponse } from '@repo/shared'
 import { logger } from '@repo/shared'
 import { nanoid } from 'nanoid'

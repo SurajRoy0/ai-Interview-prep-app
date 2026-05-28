@@ -56,7 +56,7 @@ function VerifyContent() {
     }
 
     toast.success("Email verified! Welcome to Foxtel.")
-    router.push("/dashboard")
+    router.push("/candidate/dashboard")
     router.refresh()
   }
 

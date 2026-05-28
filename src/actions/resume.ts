@@ -69,35 +69,12 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
     // Queue the background job for AI parsing
     await resumeQueue.add('parse-resume', { resumeId: resume.id })
 
-    revalidatePath(`/job-profiles/${jobProfileId}`)
+    revalidatePath(`/candidate/job-profiles/${jobProfileId}`)
 
     return success({ resumeId: resume.id })
   } catch (error) {
     console.error('[uploadResumeAction]', error)
     return failure('Failed to upload resume', 'INTERNAL_ERROR')
-  }
-}
-
-export async function getResumeStatusAction(resumeId: string): Promise<ActionResult<{ status: string; parsedData?: unknown; parseError?: string | null }>> {
-  try {
-    const session = await getSession()
-    if (!session) return failure('Unauthorized', 'UNAUTHORIZED')
-
-    const resume = await prisma.resume.findUnique({
-      where: { id: resumeId, jobProfile: { userId: session.user.id } },
-      select: { parseStatus: true, parsedData: true, parseError: true }
-    })
-
-    if (!resume) return failure('Resume not found', 'NOT_FOUND')
-
-    return success({
-      status: resume.parseStatus,
-      parsedData: resume.parseStatus === 'DONE' ? resume.parsedData : undefined,
-      parseError: resume.parseError
-    })
-  } catch (error) {
-    console.error('[getResumeStatusAction]', error)
-    return failure('Failed to get status', 'INTERNAL_ERROR')
   }
 }
 
@@ -142,7 +119,7 @@ export async function deleteResumeAction(resumeId: string): Promise<ActionResult
       })
     }
 
-    revalidatePath(`/job-profiles/${jobProfileId}`)
+    revalidatePath(`/candidate/job-profiles/${jobProfileId}`)
 
     return success({ success: true })
   } catch (error) {
@@ -169,7 +146,7 @@ export async function retryResumeParseAction(resumeId: string): Promise<ActionRe
 
     await resumeQueue.add('parse-resume', { resumeId: resume.id })
 
-    revalidatePath(`/job-profiles/${resume.jobProfileId}`)
+    revalidatePath(`/candidate/job-profiles/${resume.jobProfileId}`)
 
     return success({ success: true })
   } catch (error) {
@@ -195,7 +172,7 @@ export async function activateResumeAction(resumeId: string): Promise<ActionResu
       data: { activeResumeId: resume.id }
     })
 
-    revalidatePath(`/job-profiles/${resume.jobProfileId}`)
+    revalidatePath(`/candidate/job-profiles/${resume.jobProfileId}`)
 
     return success({ success: true })
   } catch (error) {

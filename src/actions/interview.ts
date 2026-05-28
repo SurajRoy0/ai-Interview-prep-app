@@ -1,66 +1,104 @@
-'use server' // <-- 1. This tells Next.js this code MUST run securely on the server
+'use server'
 
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
-import { createInterviewSchema } from '@repo/validators'
+import { ActionResult, success, failure } from '@/lib/action-result'
+import { getUserActivePlanConfig } from '@repo/db'
+import type { DifficultyProgression, InterviewType } from '@repo/db'
 
-export async function createInterviewAction(formData: unknown) {
-    // 2. CHECK AUTH: Get the session directly from the server.
-    // We don't trust the client to tell us who they are.
+export async function createInterviewAction(
+  jobProfileId: string,
+  requestedDifficulty?: string,
+  requestedType?: string
+): Promise<ActionResult<{ interviewId: string }>> {
+  try {
     const session = await getSession()
-    if (!session?.user?.id) {
-        throw new Error('Unauthorized')
-    }
+    if (!session) return failure('Unauthorized', 'UNAUTHORIZED')
+    const userId = session.user.id
 
-    // 3. VALIDATE DATA: We use your exact schema from the validators package!
-    // If the data is bad, .parse() will throw an error immediately.
-    const validatedData = createInterviewSchema.parse(formData)
+    return await prisma.$transaction(async (tx) => {
+      // 1. Fetch User
+      const user = await tx.user.findUnique({
+        where: { id: userId }
+      })
+      if (!user) return failure('User not found', 'NOT_FOUND')
 
-    // 4. DATABASE: Fetch resume to get jobProfileId, then create interview
-    const resume = await prisma.resume.findUnique({ where: { id: validatedData.resumeId } })
-    if (!resume) throw new Error("Resume not found")
+      // 2. Fetch Job Profile and Active Resume
+      const jobProfile = await tx.jobProfile.findUnique({
+        where: { id: jobProfileId, userId },
+        include: { activeResume: true }
+      })
 
-    const newInterview = await prisma.interview.create({
-        data: {
-            userId: session.user.id,
-            jobProfileId: resume.jobProfileId,
-            resumeId: validatedData.resumeId,
-            type: validatedData.type,
-            status: 'PENDING'
+      if (!jobProfile) return failure('Job profile not found', 'NOT_FOUND')
+      if (!jobProfile.activeResume) return failure('You must activate a resume before starting an interview.', 'BAD_REQUEST')
+
+      // 3. Compute Credits
+      const freeCredit = !user.freeInterviewUsed ? 1 : 0
+
+      const grantsResult = await tx.interviewCredit.aggregate({
+        where: {
+          userId,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+        },
+        _sum: { credits: true }
+      })
+      const grantedCredits = grantsResult._sum.credits || 0
+
+      const usedCredits = await tx.interview.count({
+        where: {
+          userId,
+          status: { notIn: ['PENDING'] }
         }
+      })
+
+      const balance = freeCredit + grantedCredits - usedCredits
+
+      if (balance <= 0) {
+        return failure('You have no interview credits remaining. Please upgrade your plan or purchase more credits.', 'INSUFFICIENT_CREDITS')
+      }
+
+      // 4. Update free interview state if they used it
+      if (!user.freeInterviewUsed) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { freeInterviewUsed: true }
+        })
+      }
+
+      // 5. Fetch PlanConfig securely
+      const planConfig = await getUserActivePlanConfig(userId)
+
+      // 6. Validate Difficulty Progression
+      let difficulty: DifficultyProgression = planConfig.allowedDifficultyModes[0] || 'ADAPTIVE'
+      if (requestedDifficulty && planConfig.allowedDifficultyModes.includes(requestedDifficulty as DifficultyProgression)) {
+        difficulty = requestedDifficulty as DifficultyProgression
+      }
+
+      // 7. Determine Interview Type
+      const type = (requestedType as InterviewType) || 'FULL'
+
+      // 8. Create Interview in PENDING state
+      const interview = await tx.interview.create({
+        data: {
+          userId,
+          jobProfileId,
+          resumeId: jobProfile.activeResume.id,
+          resumeSnapshot: jobProfile.activeResume.parsedData || {},
+          planConfigSnapshot: planConfig,
+          planConfigId: planConfig.id,
+          difficultyProgression: difficulty,
+          type,
+          status: 'PENDING',
+          totalQuestions: planConfig.targetTurns,
+          maxPauseCount: planConfig.maxPauseCount
+        }
+      })
+
+      return success({ interviewId: interview.id })
     })
 
-    // 5. REALTIME: Removed Ably. We will use AI Streaming instead.
-
-    // 6. RETURN: Send the result back to the frontend component
-    return { success: true, interviewId: newInterview.id }
+  } catch (error) {
+    console.error('[createInterviewAction]', error)
+    return failure('Failed to create interview', 'INTERNAL_ERROR')
+  }
 }
-
-
-// 'use client'
-
-// import { createInterviewAction } from '@/actions/interview'
-// import { useState } from 'react'
-
-// export default function StartInterviewButton() {
-//   const [loading, setLoading] = useState(false)
-
-//   const handleStart = async () => {
-//     setLoading(true)
-//     try {
-//       // Look how easy this is! Just call the function directly.
-//       const result = await createInterviewAction({ 
-//         resumeId: 'clxyz123', 
-//         type: 'FREE' 
-//       })
-      
-//       console.log('Started interview:', result.interviewId)
-//     } catch (error) {
-//       console.error("Validation failed or unauthorized!", error)
-//     } finally {
-//       setLoading(false)
-//     }
-//   }
-
-//   return <button onClick={handleStart} disabled={loading}>Start Interview</button>
-// }

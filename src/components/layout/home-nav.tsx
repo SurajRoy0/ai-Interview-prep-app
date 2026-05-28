@@ -62,7 +62,7 @@ export function HomeNav({ session }: HomeNavProps) {
           <div className="hidden md:flex items-center gap-3">
             {session ? (
               <Button asChild size="sm" className="rounded-full px-5 shadow-primary-glow">
-                <Link href="/dashboard">Dashboard →</Link>
+                <Link href={session.user.role === "ADMIN" ? "/admin/dashboard" : "/candidate/dashboard"}>Dashboard →</Link>
               </Button>
             ) : (
               <>
@@ -114,7 +114,7 @@ export function HomeNav({ session }: HomeNavProps) {
             <div className="mt-2 pt-3 border-t border-border/40 flex flex-col gap-2">
               {session ? (
                 <Button asChild size="sm" className="rounded-full">
-                  <Link href="/dashboard">Dashboard →</Link>
+                  <Link href="/candidate/dashboard">Dashboard →</Link>
                 </Button>
               ) : (
                 <>

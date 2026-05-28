@@ -20,7 +20,7 @@ export async function POST() {
       TRUNCATE TABLE
         "ImprovementSuggestion",
         "InterviewReport",
-        "InterviewActivity",
+        "InterviewQuestion",
         "InterviewTurn",
         "InterviewAnalytics",
         "Interview",
@@ -34,6 +34,8 @@ export async function POST() {
         "Account",
         "Verification",
         "FeatureFlag",
+        "PlanConfig",
+        "Plan",
         "User"
       RESTART IDENTITY CASCADE
     `)
