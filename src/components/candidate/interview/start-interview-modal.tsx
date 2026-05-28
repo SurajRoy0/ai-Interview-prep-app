@@ -37,7 +37,10 @@ interface StartInterviewModalProps {
 export function StartInterviewModal({ jobProfileId, hasActiveResume }: StartInterviewModalProps) {
   const router = useRouter()
   const planConfig = useAppStore(s => s.planConfig)
-  const allowedDifficultyModes = (planConfig?.allowedDifficultyModes as string[]) || []
+  const allowedDifficultyModes = React.useMemo(() => 
+    (planConfig?.allowedDifficultyModes as string[]) || [], 
+    [planConfig?.allowedDifficultyModes]
+  )
   
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)

@@ -55,7 +55,8 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
   const [showSignOutDialog, setShowSignOutDialog] = useState(false)
   const [signOutLoading, setSignOutLoading] = useState(false)
 
-  const isInterviewSession = pathname.includes('/interview/session')
+  // Fix: The pathname looks like /candidate/interview/123/session
+  const isInterviewSession = /\/interview\/[^/]+\/session/.test(pathname)
 
   async function handleSignOut() {
     setSignOutLoading(true)
