@@ -94,7 +94,7 @@ export default async function JobProfilesPage({
               return (
                 <Link
                   key={profile.id}
-                  href={`/job-profiles/${profile.id}`}
+                  href={`/candidate/job-profiles/${profile.id}`}
                   className="group bg-card border border-border/50 hover:border-primary/35 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md hover:shadow-primary/5 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between gap-3">
