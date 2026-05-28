@@ -591,6 +591,8 @@ model Interview {
   // when each topic becomes ACTIVE.
   interviewPlan Json?
   planGenerated Boolean @default(false)
+  planStatus    JobStatus @default(PENDING)
+  planError     String?
 
   // ── PROGRESS ─────────────────────────────────────────────
   totalQuestions       Int @default(8) // copied from planConfig.targetTurns + activities

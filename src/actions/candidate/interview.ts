@@ -3,6 +3,7 @@
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
 import { ActionResult, success, failure } from '@/lib/action-result'
+import { planGenerationQueue } from '@/lib/queues'
 import { getUserActivePlanConfig } from '@repo/db'
 import type { DifficultyProgression, InterviewType } from '@repo/db'
 
@@ -16,7 +17,7 @@ export async function createInterviewAction(
     if (!session) return failure('Unauthorized', 'UNAUTHORIZED')
     const userId = session.user.id
 
-    return await prisma.$transaction(async (tx) => {
+    const transactionResult = await prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
       })
@@ -81,13 +82,29 @@ export async function createInterviewAction(
           difficultyProgression: difficulty,
           type,
           status: 'PENDING',
+          planStatus: 'PENDING',
           totalQuestions: planConfig.targetTurns,
           maxPauseCount: planConfig.maxPauseCount,
         },
       })
 
+      // We cannot enqueue inside the Prisma transaction because if it fails,
+      // the queue job might still be fired. So we return the interview first.
       return success({ interviewId: interview.id })
     })
+
+    if (!transactionResult.success) {
+      return transactionResult
+    }
+
+    // Transaction succeeded, enqueue the plan generation job
+    await planGenerationQueue.add(
+      'generate-plan',
+      { interviewId: transactionResult.data.interviewId },
+      { removeOnComplete: true, attempts: 3, backoff: { type: 'exponential', delay: 1000 } }
+    )
+
+    return transactionResult
   } catch (error) {
     console.error('[createInterviewAction]', error)
     return failure('Failed to create interview', 'INTERNAL_ERROR')

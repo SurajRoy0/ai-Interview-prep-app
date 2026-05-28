@@ -61,7 +61,11 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
       data: { activeResumeId: resume.id },
     })
 
-    await resumeQueue.add('parse-resume', { resumeId: resume.id })
+    await resumeQueue.add(
+      'parse-resume',
+      { resumeId: resume.id },
+      { removeOnComplete: true, attempts: 3, backoff: { type: 'exponential', delay: 1000 } }
+    )
 
     revalidatePath(`/candidate/job-profiles/${jobProfileId}`)
 
