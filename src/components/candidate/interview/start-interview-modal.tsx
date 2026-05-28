@@ -25,16 +25,20 @@ import { toast } from 'sonner'
 import { Loader2, Briefcase, Terminal, Users, Network, MessageCircle, Zap, Shield, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { useAppStore } from '@/components/providers/app-store-provider'
+
 export type AllowedDifficultyMode = 'GRADUAL' | 'ADAPTIVE' | 'INTENSIVE'
 
 interface StartInterviewModalProps {
   jobProfileId: string
-  allowedDifficultyModes: string[]
   hasActiveResume: boolean
 }
 
-export function StartInterviewModal({ jobProfileId, allowedDifficultyModes, hasActiveResume }: StartInterviewModalProps) {
+export function StartInterviewModal({ jobProfileId, hasActiveResume }: StartInterviewModalProps) {
   const router = useRouter()
+  const planConfig = useAppStore(s => s.planConfig)
+  const allowedDifficultyModes = (planConfig?.allowedDifficultyModes as string[]) || []
+  
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [difficulty, setDifficulty] = useState<string>('ADAPTIVE')

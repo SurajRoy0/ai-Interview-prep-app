@@ -1,5 +1,4 @@
 import { getJobProfileByIdAction, getJobProfileResumesAction } from "@/actions/candidate/job-profile"
-import { getUserActivePlanConfig } from "@repo/db"
 import { getSession } from "@/lib/auth-server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -34,10 +33,9 @@ export default async function JobProfileDetailPage({
   const session = await getSession()
   if (!session) return notFound()
 
-  const [profileResult, resumesResult, planConfig] = await Promise.all([
+  const [profileResult, resumesResult] = await Promise.all([
     getJobProfileByIdAction(id),
     getJobProfileResumesAction(id, currentPage, RESUMES_LIMIT),
-    getUserActivePlanConfig(session.user.id)
   ])
 
   if (!profileResult.success) return notFound()
@@ -192,7 +190,7 @@ export default async function JobProfileDetailPage({
 
           {/* Quick Start Card */}
           <div className="bg-primary border border-primary rounded-3xl p-6 shadow-primary-glow text-primary-foreground relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-linear-to-br from-white/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative z-10">
               <h3 className="text-xl font-bold mb-2">Ready to practice?</h3>
               <p className="text-primary-foreground/90 text-sm mb-6 leading-relaxed">
@@ -200,7 +198,6 @@ export default async function JobProfileDetailPage({
               </p>
               <StartInterviewModal
                 jobProfileId={profile.id}
-                allowedDifficultyModes={planConfig.allowedDifficultyModes}
                 hasActiveResume={hasActiveResume}
               />
               {!hasActiveResume && (
