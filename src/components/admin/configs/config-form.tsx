@@ -17,6 +17,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog"
 import { Trash2, Save, ArrowLeft, Settings, Clock, Brain, FileText, BarChart3, Bot } from "lucide-react"
 
+const activityConfigExample = `{
+  "DEBUGGING": 2,
+  "CODE_CORRECTION": 1,
+  "OUTPUT_PREDICTION": 1,
+  "RESUME_DEFENCE": 1,
+  "PRIORITISATION": 1,
+  "COMMUNICATION": 1,
+  "SYSTEM_DESIGN_MINI": 1
+}`
+
 interface ConfigFormProps {
   initialData?: Partial<Omit<ConfigInput, "activityConfig">> & { activityConfig?: unknown; id?: string }
   configId?: string
@@ -230,7 +240,11 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
               <div className="space-y-2 pt-2 border-t border-border/50">
                 <Label>Activity Config (JSON)</Label>
                 <p className="text-sm text-muted-foreground mb-2">Configure custom activities dynamically injected by the planner.</p>
-                <Textarea {...register("activityConfig")} className="font-mono min-h-[120px]" placeholder='{"DEBUGGING": 1}' />
+                <Textarea {...register("activityConfig")} className="font-mono min-h-[120px]" placeholder={activityConfigExample} />
+                <p className="text-xs text-muted-foreground">Example JSON (include all activity types with counts):</p>
+                <pre className="text-xs font-mono rounded-md border border-border/60 bg-muted/40 p-3 overflow-x-auto">
+                  {activityConfigExample}
+                </pre>
                 {errors.activityConfig && <p className="text-xs text-destructive">{errors.activityConfig.message}</p>}
               </div>
             </CardContent>

@@ -15,6 +15,8 @@ export default async function CandidateLayout({ children }: { children: React.Re
     getUserActivePlanConfig(session.user.id)
   ])
 
+  console.log(planConfig, "planConfig ##")
+
   return (
     <AppStoreProvider initialState={{ planConfig }}>
       <CandidateShell session={session} totalCredits={totalCredits}>
