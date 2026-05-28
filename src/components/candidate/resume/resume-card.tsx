@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { FileText, CheckCircle2, AlertTriangle, Loader2, Trash2, RefreshCw, Star } from "lucide-react"
-import { deleteResumeAction, retryResumeParseAction, activateResumeAction } from "@/actions/resume"
+import { deleteResumeAction, retryResumeParseAction, activateResumeAction } from "@/actions/candidate/resume"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

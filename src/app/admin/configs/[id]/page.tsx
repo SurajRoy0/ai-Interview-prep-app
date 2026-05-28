@@ -1,4 +1,4 @@
-import { getAdminConfigByIdAction } from "@/actions/admin-config"
+import { getAdminConfigByIdAction } from "@/actions/admin/config"
 import { ConfigForm } from "@/components/admin/configs/config-form"
 import { notFound } from "next/navigation"
 

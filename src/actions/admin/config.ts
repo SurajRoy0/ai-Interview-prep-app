@@ -15,10 +15,9 @@ async function requireAdmin() {
 
 export async function createAdminConfigAction(data: ConfigInput) {
   await requireAdmin()
-  
+
   const parsed = configSchema.parse(data)
-  
-  // Parse activityConfig JSON string
+
   let activityConfigJson = {}
   try {
     activityConfigJson = JSON.parse(parsed.activityConfig)
@@ -26,7 +25,6 @@ export async function createAdminConfigAction(data: ConfigInput) {
     // Should be caught by zod, but fallback just in case
   }
 
-  // If this config is set to default, we must unset others
   if (parsed.isDefault) {
     await prisma.planConfig.updateMany({
       where: { isDefault: true },
@@ -47,7 +45,7 @@ export async function createAdminConfigAction(data: ConfigInput) {
 
 export async function updateAdminConfigAction(id: string, data: ConfigInput) {
   await requireAdmin()
-  
+
   const parsed = configSchema.parse(data)
 
   let activityConfigJson = {}
@@ -79,9 +77,6 @@ export async function updateAdminConfigAction(id: string, data: ConfigInput) {
 
 export async function deleteAdminConfigAction(id: string) {
   await requireAdmin()
-
-  // Prevent deleting if it's the only default one, or we can just let Prisma handle
-  // But generally good to ensure at least one config exists, though we'll keep it simple here.
 
   await prisma.planConfig.delete({
     where: { id },

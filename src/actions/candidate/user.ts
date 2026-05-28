@@ -15,16 +15,16 @@ export const getTotalCreditsAction = cache(async () => {
       freeInterviewUsed: true,
       credits: {
         select: {
-          credits: true
-        }
-      }
+          credits: true,
+        },
+      },
     },
   })
 
   if (!user) return 0
 
   return (
-    (user.freeInterviewUsed ? 0 : 1) + 
+    (user.freeInterviewUsed ? 0 : 1) +
     user.credits.reduce((acc, c) => acc + c.credits, 0)
   )
 })
@@ -37,17 +37,17 @@ export const getDashboardStatsAction = async () => {
 
   const [interviewsCount, resumeCount] = await Promise.all([
     prisma.interview.count({
-      where: { userId: session.user.id }
+      where: { userId: session.user.id },
     }),
     prisma.resume.count({
       where: {
-        jobProfile: { userId: session.user.id }
-      }
-    })
+        jobProfile: { userId: session.user.id },
+      },
+    }),
   ])
 
   return {
     interviewsCount,
-    resumeCount
+    resumeCount,
   }
 }

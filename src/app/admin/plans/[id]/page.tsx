@@ -1,5 +1,5 @@
 import { getAdminPlanConfigsAction } from '@/actions/admin'
-import { getAdminPlanByIdAction } from '@/actions/admin-plan'
+import { getAdminPlanByIdAction } from '@/actions/admin/plan'
 import { PlanForm } from '@/components/admin/plans/plan-form'
 import { notFound } from 'next/navigation'
 

@@ -9,6 +9,7 @@ const connection = {
 
 const globalForQueues = global as unknown as {
   resumeQueue: Queue
+  planGenerationQueue: Queue
   reportQueue: Queue
 }
 
@@ -16,6 +17,11 @@ export const resumeQueue =
   globalForQueues.resumeQueue ||
   new Queue(QUEUE_NAMES.RESUME_PROCESSING, { connection })
 
+export const planGenerationQueue =
+  globalForQueues.planGenerationQueue ||
+  new Queue(QUEUE_NAMES.INTERVIEW_PLAN_GENERATION, { connection })
+
 if (process.env.NODE_ENV !== 'production') {
   globalForQueues.resumeQueue = resumeQueue
+  globalForQueues.planGenerationQueue = planGenerationQueue
 }

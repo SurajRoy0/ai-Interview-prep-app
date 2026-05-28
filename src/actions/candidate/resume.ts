@@ -19,21 +19,18 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
       return failure('File and Job Profile ID are required', 'BAD_REQUEST')
     }
 
-    // Ensure Job Profile exists and belongs to user
     const profile = await prisma.jobProfile.findUnique({
-      where: { id: jobProfileId, userId: session.user.id }
+      where: { id: jobProfileId, userId: session.user.id },
     })
 
     if (!profile) return failure('Job profile not found', 'NOT_FOUND')
 
-    // Determine safe version using max existing version
     const maxVersionAgg = await prisma.resume.aggregate({
       where: { jobProfileId },
-      _max: { version: true }
+      _max: { version: true },
     })
     const newVersion = (maxVersionAgg._max.version || 0) + 1
 
-    // Extract raw text
     const buffer = Buffer.from(await file.arrayBuffer())
     let rawText = ''
     try {
@@ -46,7 +43,6 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
       return failure('Extracted text is too short. Please upload a valid resume.', 'INVALID_FILE')
     }
 
-    // Create Resume record with PENDING parse status
     const resume = await prisma.resume.create({
       data: {
         jobProfileId,
@@ -56,18 +52,20 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
         parseError: null,
         rawText,
         rawTextLength: rawText.length,
-        parsedData: {}, // Empty JSON for now
-      }
+        parsedData: {},
+      },
     })
 
-    // Update the active resume pointer for the job profile
     await prisma.jobProfile.update({
       where: { id: jobProfileId },
-      data: { activeResumeId: resume.id }
+      data: { activeResumeId: resume.id },
     })
 
-    // Queue the background job for AI parsing
-    await resumeQueue.add('parse-resume', { resumeId: resume.id })
+    await resumeQueue.add(
+      'parse-resume',
+      { resumeId: resume.id },
+      { removeOnComplete: true, attempts: 3, backoff: { type: 'exponential', delay: 1000 } }
+    )
 
     revalidatePath(`/candidate/job-profiles/${jobProfileId}`)
 
@@ -85,14 +83,13 @@ export async function deleteResumeAction(resumeId: string): Promise<ActionResult
 
     const resume = await prisma.resume.findUnique({
       where: { id: resumeId, jobProfile: { userId: session.user.id } },
-      include: { activeForJobProfile: true, jobProfile: true }
+      include: { activeForJobProfile: true, jobProfile: true },
     })
 
     if (!resume) return failure('Resume not found', 'NOT_FOUND')
 
-    // Prevent deletion if used in an interview
     const interviewCount = await prisma.interview.count({
-      where: { resumeId }
+      where: { resumeId },
     })
 
     if (interviewCount > 0) {
@@ -101,21 +98,19 @@ export async function deleteResumeAction(resumeId: string): Promise<ActionResult
 
     const jobProfileId = resume.jobProfile.id
 
-    // Hard delete
     await prisma.resume.delete({
-      where: { id: resumeId }
+      where: { id: resumeId },
     })
 
-    // If it was the active resume, assign the latest remaining resume
     if (resume.activeForJobProfile) {
       const remainingLatest = await prisma.resume.findFirst({
         where: { jobProfileId },
-        orderBy: { version: 'desc' }
+        orderBy: { version: 'desc' },
       })
 
       await prisma.jobProfile.update({
         where: { id: jobProfileId },
-        data: { activeResumeId: remainingLatest ? remainingLatest.id : null }
+        data: { activeResumeId: remainingLatest ? remainingLatest.id : null },
       })
     }
 
@@ -141,7 +136,7 @@ export async function retryResumeParseAction(resumeId: string): Promise<ActionRe
 
     await prisma.resume.update({
       where: { id: resumeId },
-      data: { parseStatus: 'PENDING', parseError: null }
+      data: { parseStatus: 'PENDING', parseError: null },
     })
 
     await resumeQueue.add('parse-resume', { resumeId: resume.id })
@@ -162,14 +157,14 @@ export async function activateResumeAction(resumeId: string): Promise<ActionResu
 
     const resume = await prisma.resume.findUnique({
       where: { id: resumeId, jobProfile: { userId: session.user.id } },
-      include: { jobProfile: true }
+      include: { jobProfile: true },
     })
 
     if (!resume) return failure('Resume not found', 'NOT_FOUND')
 
     await prisma.jobProfile.update({
       where: { id: resume.jobProfileId },
-      data: { activeResumeId: resume.id }
+      data: { activeResumeId: resume.id },
     })
 
     revalidatePath(`/candidate/job-profiles/${resume.jobProfileId}`)

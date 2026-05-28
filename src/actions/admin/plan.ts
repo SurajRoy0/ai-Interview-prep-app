@@ -15,9 +15,9 @@ async function requireAdmin() {
 
 export async function createAdminPlanAction(data: PlanInput) {
   await requireAdmin()
-  
+
   const parsed = planSchema.parse(data)
-  
+
   const plan = await prisma.plan.create({
     data: parsed,
   })
@@ -28,7 +28,7 @@ export async function createAdminPlanAction(data: PlanInput) {
 
 export async function updateAdminPlanAction(id: string, data: PlanInput) {
   await requireAdmin()
-  
+
   const parsed = planSchema.parse(data)
 
   const plan = await prisma.plan.update({
@@ -56,7 +56,7 @@ export async function getAdminPlansAction() {
   await requireAdmin()
   return await prisma.plan.findMany({
     include: {
-      planConfig: true
+      planConfig: true,
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -67,7 +67,7 @@ export async function getAdminPlanByIdAction(id: string) {
   return await prisma.plan.findUnique({
     where: { id },
     include: {
-      planConfig: true
-    }
+      planConfig: true,
+    },
   })
 }

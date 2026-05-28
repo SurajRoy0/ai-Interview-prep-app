@@ -2,7 +2,6 @@
 
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
-
 import { redirect } from 'next/navigation'
 
 async function requireAdmin() {

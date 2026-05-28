@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { planSchema, type PlanInput, type PlanFormInput } from "@repo/shared"
-import { createAdminPlanAction, updateAdminPlanAction, deleteAdminPlanAction } from "@/actions/admin-plan"
+import { createAdminPlanAction, updateAdminPlanAction, deleteAdminPlanAction } from "@/actions/admin/plan"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"

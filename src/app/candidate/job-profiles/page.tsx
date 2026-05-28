@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { getJobProfilesAction } from "@/actions/job-profile"
+import { getJobProfilesAction } from "@/actions/candidate/job-profile"
 import {
   Briefcase, Plus, Target, ChevronRight, CheckCircle2, CircleDashed
 } from "lucide-react"
