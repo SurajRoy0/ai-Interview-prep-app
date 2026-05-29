@@ -27,9 +27,9 @@ export const AppStoreProvider = ({
   const storeRef = useRef<AppStoreApi>(null)
   if (!storeRef.current) {
     storeRef.current = createAppStore({
-      sidebarOpen: true,
-      planConfig: null,
-      ...initialState,
+      sidebarOpen: initialState?.sidebarOpen ?? true,
+      planConfig: initialState?.planConfig ?? null,
+      totalCredits: initialState?.totalCredits ?? 0,
     })
   }
 
