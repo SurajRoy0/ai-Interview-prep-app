@@ -12,6 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -37,6 +43,7 @@ interface StartInterviewModalProps {
 export function StartInterviewModal({ jobProfileId, hasActiveResume }: StartInterviewModalProps) {
   const router = useRouter()
   const planConfig = useAppStore(s => s.planConfig)
+  const totalCredits = useAppStore(s => s.totalCredits)
   const allowedDifficultyModes = React.useMemo(() => 
     (planConfig?.allowedDifficultyModes as string[]) || [], 
     [planConfig?.allowedDifficultyModes]
@@ -136,17 +143,47 @@ export function StartInterviewModal({ jobProfileId, hasActiveResume }: StartInte
     }
   ]
 
+  const isOutOfCredits = totalCredits <= 0
+  const isDisabled = !hasActiveResume || isOutOfCredits
+
+  let buttonText = 'Start Interview'
+  if (!hasActiveResume) buttonText = 'Upload Resume to Start'
+  else if (isOutOfCredits) buttonText = 'Insufficient Credits'
+
+  let tooltipText = ''
+  if (!hasActiveResume) tooltipText = 'Please upload a resume first'
+  else if (isOutOfCredits) tooltipText = 'You have no interview credits remaining'
+
+  const triggerButton = (
+    <Button
+      disabled={isDisabled}
+      size="lg"
+      className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl font-bold text-sm h-12 shadow-sm"
+    >
+      {buttonText}
+    </Button>
+  )
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          disabled={!hasActiveResume}
-          size="lg"
-          className="w-full bg-background text-foreground hover:bg-background/90 rounded-xl font-bold text-sm h-12 shadow-sm"
-        >
-          {hasActiveResume ? 'Start Interview' : 'Upload Resume to Start'}
-        </Button>
-      </DialogTrigger>
+      {isDisabled ? (
+        <TooltipProvider>
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <div className="w-full cursor-not-allowed">
+                {triggerButton}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{tooltipText}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        <DialogTrigger asChild>
+          {triggerButton}
+        </DialogTrigger>
+      )}
 
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden">
         <form onSubmit={handleSubmit} className="grid gap-4">
