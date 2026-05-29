@@ -111,7 +111,7 @@ export default async function JobProfileDetailPage({
             </div>
 
             {/* Uploader */}
-            <ResumeUploader jobProfileId={profile.id} isServerProcessing={isProcessing} />
+            <ResumeUploader jobProfileId={profile.id} isServerProcessing={isProcessing} currentCount={totalCount} />
 
             {/* Version History */}
             <div className="space-y-4 pt-4">

@@ -14,7 +14,7 @@ export async function generateInterviewPlanWithAI(
     model,
     schema: interviewPlanSchema,
     system: buildPlanGeneratorSystemPrompt(targetRole, experienceLevel, resumeData, options),
-    prompt: `Generate the interview plan for the candidate. Ensure you generate exactly ${options.targetTurns} topics.`,
+    prompt: `Generate the interview plan for the candidate. Ensure you generate exactly ${options.targetTopics} topics.`,
     temperature: 0.2, // slight variation for better reasoning
   })
 

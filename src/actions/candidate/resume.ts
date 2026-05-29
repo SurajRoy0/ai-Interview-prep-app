@@ -1,6 +1,6 @@
 'use server'
 
-import { prisma } from '@repo/db'
+import { prisma, getUserActivePlanConfig } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
 import { ActionResult, success, failure } from '@/lib/action-result'
 import { extractTextFromFileBuffer } from '@repo/ai'
@@ -24,6 +24,30 @@ export async function uploadResumeAction(formData: FormData): Promise<ActionResu
     })
 
     if (!profile) return failure('Job profile not found', 'NOT_FOUND')
+
+    const planConfig = await getUserActivePlanConfig(session.user.id)
+    
+    // Check global user limit for uploads in the last 24h
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const recentUploadsCount = await prisma.resume.count({
+      where: {
+        jobProfile: { userId: session.user.id },
+        createdAt: { gte: twentyFourHoursAgo }
+      }
+    })
+
+    if (recentUploadsCount >= planConfig.maxResumeUploadsPerDay) {
+      return failure(`You have reached your plan limit of ${planConfig.maxResumeUploadsPerDay} resume upload(s) per 24 hours.`, 'RATE_LIMITED')
+    }
+
+    // Also check max resumes per job profile
+    const resumesInProfile = await prisma.resume.count({
+      where: { jobProfileId }
+    })
+
+    if (resumesInProfile >= planConfig.maxResumeUploadsPerJobProfile) {
+      return failure(`You have reached the limit of ${planConfig.maxResumeUploadsPerJobProfile} resumes for this job profile.`, 'RATE_LIMITED')
+    }
 
     const maxVersionAgg = await prisma.resume.aggregate({
       where: { jobProfileId },

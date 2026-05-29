@@ -12,10 +12,10 @@ export const getTotalCreditsAction = cache(async () => {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
-      freeInterviewUsed: true,
+      joiningBonusGranted: true,
       credits: {
         select: {
-          credits: true,
+          amount: true,
         },
       },
     },
@@ -23,10 +23,7 @@ export const getTotalCreditsAction = cache(async () => {
 
   if (!user) return 0
 
-  return (
-    (user.freeInterviewUsed ? 0 : 1) +
-    user.credits.reduce((acc, c) => acc + c.credits, 0)
-  )
+  return user.credits.reduce((acc, c) => acc + c.amount, 0)
 })
 
 export const getDashboardStatsAction = async () => {

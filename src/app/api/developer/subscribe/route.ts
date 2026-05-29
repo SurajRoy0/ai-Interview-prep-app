@@ -65,19 +65,18 @@ export async function POST(req: Request) {
           status: 'ACTIVE',
           currentPeriodStart: now,
           currentPeriodEnd: currentPeriodEnd,
-          interviewsLeft: plan.interviewCredits,
           provider: 'dev_api',
           providerSubId: `dev_${Date.now()}`
         }
       })
 
-      // Also create an InterviewCredit record for their billing ledger
-      if (plan.interviewCredits > 0) {
-        await tx.interviewCredit.create({
+      // Also create a Credit record for their billing ledger
+      if (plan.includedCredits > 0) {
+        await tx.credit.create({
           data: {
             userId: user.id,
-            credits: plan.interviewCredits,
-            reason: 'dev_grant',
+            amount: plan.includedCredits,
+            reason: 'subscription',
             expiresAt: currentPeriodEnd
           }
         })

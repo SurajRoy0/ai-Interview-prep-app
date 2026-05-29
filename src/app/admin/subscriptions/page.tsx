@@ -27,7 +27,7 @@ export default async function AdminSubscriptionsPage() {
               <TableHead>User</TableHead>
               <TableHead>Plan</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Credits Left</TableHead>
+
               <TableHead className="text-right">Expires</TableHead>
             </TableRow>
           </TableHeader>
@@ -44,7 +44,7 @@ export default async function AdminSubscriptionsPage() {
                     {sub.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">{sub.interviewsLeft}</TableCell>
+
                 <TableCell className="text-right text-muted-foreground">
                   {format(sub.currentPeriodEnd, 'MMM d, yyyy')}
                 </TableCell>
@@ -52,7 +52,7 @@ export default async function AdminSubscriptionsPage() {
             ))}
             {subscriptions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                   No subscriptions found.
                 </TableCell>
               </TableRow>

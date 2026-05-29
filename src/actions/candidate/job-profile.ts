@@ -1,6 +1,6 @@
 'use server'
 
-import { prisma } from '@repo/db'
+import { prisma, getUserActivePlanConfig } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
 import { createJobProfileSchema } from '@repo/shared'
 import { ActionResult, success, failure } from '@/lib/action-result'
@@ -15,6 +15,16 @@ export async function createJobProfileAction(
     if (!session) return failure('Unauthorized', 'UNAUTHORIZED')
 
     const parsed = createJobProfileSchema.parse(data)
+
+    const planConfig = await getUserActivePlanConfig(session.user.id)
+    
+    const existingCount = await prisma.jobProfile.count({
+      where: { userId: session.user.id }
+    })
+
+    if (existingCount >= planConfig.maxJobProfiles) {
+      return failure(`You have reached your plan limit of ${planConfig.maxJobProfiles} job profile(s).`, 'RATE_LIMITED')
+    }
 
     const profile = await prisma.jobProfile.create({
       data: {

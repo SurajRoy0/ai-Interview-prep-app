@@ -52,7 +52,30 @@ const createAuth = () => betterAuth({
         type: 'string',
         defaultValue: 'CANDIDATE',
       },
+      joiningBonusGranted: {
+        type: 'boolean',
+        defaultValue: false,
+      }
     },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await prisma.credit.create({
+            data: {
+              userId: user.id,
+              amount: 1,
+              reason: 'joining_bonus'
+            }
+          })
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { joiningBonusGranted: true }
+          })
+        }
+      }
+    }
   },
   plugins: [
     emailOTP({

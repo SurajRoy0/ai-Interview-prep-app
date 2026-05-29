@@ -21,7 +21,7 @@ import { type ParsedResume } from '@repo/shared'
  */
 
 export interface PlanGeneratorOptions {
-  targetTurns: number
+  targetTopics: number
   interviewType: string
   allowActivities?: boolean
   activityConfig?: Record<string, number>
@@ -71,7 +71,7 @@ Interview Focus Type: ${options.interviewType}
 Resume Data:
 ${JSON.stringify(resumeData, null, 2)}
 
-Generate exactly ${options.targetTurns} interview topics.
+Generate exactly ${options.targetTopics} interview topics.
 Structure the interview progressively. Start with a CONFIDENCE_CHECK, then move into DEPTH_PROBE and PRESSURE_TEST based on their strongest resume claims. 
 
 CRITICAL INSTRUCTION: ${focusInstruction}${activityInstruction}

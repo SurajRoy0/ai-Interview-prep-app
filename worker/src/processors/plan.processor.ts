@@ -24,9 +24,9 @@ export async function processInterviewPlanJob(job: Job<{ interviewId: string }>)
       throw new Error(`Interview ${interviewId} not found`)
     }
 
-    const config = interview.planConfigSnapshot as ConfigInput
+    const config = interview.planConfigSnapshot as ConfigInput & { targetTopics?: number; activityConfig?: any; defaultTopicTimeLimitSecs?: number }
     const resumeData = interview.resumeSnapshot as ParsedResume
-    const targetTurns = config.targetTurns || 8
+    const targetTopics = config.targetTopics || 8
 
     // 2. Call the AI planner
     const hasActivities = Boolean(config.activityConfig && Object.keys(config.activityConfig).length > 0)
@@ -35,7 +35,7 @@ export async function processInterviewPlanJob(job: Job<{ interviewId: string }>)
       interview.jobProfile.experienceLevel,
       resumeData,
       {
-        targetTurns,
+        targetTopics,
         interviewType: interview.type,
         allowActivities: hasActivities,
         activityConfig: config.activityConfig as unknown as Record<string, number>
@@ -50,16 +50,16 @@ export async function processInterviewPlanJob(job: Job<{ interviewId: string }>)
           planStatus: 'DONE',
           planGenerated: true,
           interviewPlan: plan as any,
-          totalQuestions: targetTurns,
+          totalTopics: targetTopics,
         }
       })
 
-      // 4. Seed the InterviewQuestion records
+      // 4. Seed the InterviewTopic records
       if (plan.topics && plan.topics.length > 0) {
-        await tx.interviewQuestion.createMany({
+        await tx.interviewTopic.createMany({
           data: plan.topics.map((topic, index) => ({
             interviewId,
-            questionIndex: index,
+            topicIndex: index,
             type: topic.category === 'ACTIVITY' ? 'ACTIVITY' : 'QA',
             activityType: topic.activityType,
             status: 'PENDING',
@@ -67,7 +67,7 @@ export async function processInterviewPlanJob(job: Job<{ interviewId: string }>)
             plannedIntent: topic.intent,
             targetSkills: topic.targetSkills,
             plannedDifficulty: topic.plannedDifficulty,
-            timeLimitSeconds: topic.category === 'ACTIVITY' ? (config.activityTimeSecs || 300) : (config.questionTimeSecs || 120),
+            timeLimitSeconds: config.defaultTopicTimeLimitSecs || 600,
           }))
         })
       }

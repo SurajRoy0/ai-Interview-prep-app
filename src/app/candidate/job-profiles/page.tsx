@@ -61,7 +61,7 @@ export default async function JobProfilesPage({
           </p>
         </div>
 
-        <CreateProfileDialog>
+        <CreateProfileDialog currentCount={totalCount}>
           <Button size="sm" className="rounded-full gap-1.5 h-9 shadow-primary-glow font-semibold">
             <Plus className="h-4 w-4" /> New Profile
           </Button>
@@ -78,7 +78,7 @@ export default async function JobProfilesPage({
           <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
             Create a profile for each role you&apos;re targeting. Then upload your resume and start a tailored interview.
           </p>
-          <CreateProfileDialog>
+          <CreateProfileDialog currentCount={totalCount}>
             <Button size="sm" className="rounded-full gap-2 shadow-primary-glow">
               <Plus className="h-4 w-4" /> Create First Profile
             </Button>
