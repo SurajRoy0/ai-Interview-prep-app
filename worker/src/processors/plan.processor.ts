@@ -49,7 +49,7 @@ export async function processInterviewPlanJob(job: Job<{ interviewId: string }>)
         data: {
           planStatus: 'DONE',
           planGenerated: true,
-          interviewPlan: plan as any,
+          interviewPlan: plan,
           totalQuestions: targetTurns,
         }
       })
@@ -75,14 +75,16 @@ export async function processInterviewPlanJob(job: Job<{ interviewId: string }>)
 
     console.log(`[PlanWorker] Successfully generated plan for interview ${interviewId}`)
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[PlanWorker] Failed to process interview ${interviewId}:`, error)
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred during plan generation'
 
     await prisma.interview.update({
       where: { id: interviewId },
       data: {
         planStatus: 'FAILED',
-        planError: error.message || 'Unknown error occurred during plan generation'
+        planError: errorMessage
       }
     })
 

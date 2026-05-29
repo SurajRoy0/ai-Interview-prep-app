@@ -7,7 +7,6 @@ export * from './types/api'
 export * from './constants/error-codes'
 export * from './constants/plans'
 export * from './constants/queues'
-export * from './errors'
 export * from './utils'
 
 // Export all validators

@@ -71,16 +71,20 @@ export function SetupPoller({ interviewId, initialPlanStatus, initialPlanGenerat
     }
   }
 
-  const handleMicCheck = () => {
-    // Mock microphone permission request
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(() => {
-        setMicChecked(true)
-        toast.success("Microphone connected successfully!")
-      })
-      .catch((err) => {
-        toast.error("Please allow microphone access to proceed.")
-      })
+  const handleMicCheck = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error("Mic API blocked by browser (needs HTTPS). Bypassing for testing.")
+        setMicChecked(true) // Allow them to proceed with text
+        return
+      }
+      
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+      setMicChecked(true)
+      toast.success("Microphone connected successfully!")
+    } catch {
+      toast.error("Please allow microphone access to proceed.")
+    }
   }
 
   const handleStart = () => {
