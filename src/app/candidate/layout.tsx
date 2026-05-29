@@ -18,7 +18,7 @@ export default async function CandidateLayout({ children }: { children: React.Re
   console.log(planConfig, "planConfig ##")
 
   return (
-    <AppStoreProvider initialState={{ planConfig }}>
+    <AppStoreProvider initialState={{ planConfig, totalCredits }}>
       <CandidateShell session={session} totalCredits={totalCredits}>
         {children}
       </CandidateShell>

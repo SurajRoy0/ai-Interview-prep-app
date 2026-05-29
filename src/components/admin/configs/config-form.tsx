@@ -21,10 +21,7 @@ const activityConfigExample = `{
   "DEBUGGING": 2,
   "CODE_CORRECTION": 1,
   "OUTPUT_PREDICTION": 1,
-  "RESUME_DEFENCE": 1,
-  "PRIORITISATION": 1,
-  "COMMUNICATION": 1,
-  "SYSTEM_DESIGN_MINI": 1
+  "PRIORITISATION": 1
 }`
 
 interface ConfigFormProps {
@@ -49,14 +46,11 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
       name: "",
       isDefault: false,
       isActive: true,
-      targetTurns: 8,
+      targetTopics: 8,
       maxFollowUpsPerTopic: 2,
-      hardCapTurnsPerTopic: 8,
+      maxClarificationsPerTopic: 2,
       activityConfig: "{}",
-      questionTimeSecs: 120,
-      followUpTimeSecs: 90,
-      clarificationTimeSecs: 30,
-      activityTimeSecs: 300,
+      defaultTopicTimeLimitSecs: 600,
       maxPauseCount: 2,
       resumeDeadlineHours: 24,
       allowedDifficultyModes: ["GRADUAL", "ADAPTIVE", "INTENSIVE"],
@@ -65,16 +59,7 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
       maxSkillsPerCategory: 10,
       maxExperienceYears: 10,
       reportDepth: "STANDARD",
-      maxTopicsInReport: 5,
-      maxSuggestionsCount: 3,
-      includeActivityReport: true,
-      includeTopicEvidence: false,
-      includeAuthAnalysis: false,
       reportUnlockable: false,
-      plannerModel: "gemini-2.5-flash",
-      interviewModel: "gemini-2.5-flash",
-      judgeModel: "gemini-2.5-flash",
-      reportModel: "gemini-2.5-flash",
       questionGenMode: "HYBRID",
     }
 
@@ -221,9 +206,9 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
             <CardContent className="pt-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label>Target Turns</Label>
-                  <Input type="number" {...register("targetTurns")} />
-                  {errors.targetTurns && <p className="text-xs text-destructive">{errors.targetTurns.message}</p>}
+                  <Label>Target Topics</Label>
+                  <Input type="number" {...register("targetTopics")} />
+                  {errors.targetTopics && <p className="text-xs text-destructive">{errors.targetTopics.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Max Follow-ups / Topic</Label>
@@ -231,9 +216,9 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
                   {errors.maxFollowUpsPerTopic && <p className="text-xs text-destructive">{errors.maxFollowUpsPerTopic.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label>Hard Cap Turns / Topic</Label>
-                  <Input type="number" {...register("hardCapTurnsPerTopic")} />
-                  {errors.hardCapTurnsPerTopic && <p className="text-xs text-destructive">{errors.hardCapTurnsPerTopic.message}</p>}
+                  <Label>Max Clarifications / Topic</Label>
+                  <Input type="number" {...register("maxClarificationsPerTopic")} />
+                  {errors.maxClarificationsPerTopic && <p className="text-xs text-destructive">{errors.maxClarificationsPerTopic.message}</p>}
                 </div>
               </div>
 
@@ -251,6 +236,28 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
           </Card>
         </section>
 
+        {/* ── Question Generation Mode ──────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <Brain className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Question Generation Mode</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="space-y-2 max-w-sm">
+                <Label>Question Generation Strategy</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  {...register("questionGenMode")}
+                >
+                  <option value="HYBRID">Hybrid (Mix of Generated & Pre-defined)</option>
+                </select>
+                {errors.questionGenMode && <p className="text-xs text-destructive">{errors.questionGenMode.message}</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* ── Timing & Pausing ─────────────────────────────────────────────── */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
@@ -259,26 +266,11 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
           </div>
           <Card className="border-border/60 shadow-sm">
             <CardContent className="pt-6 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Q&A Time (seconds)</Label>
-                  <Input type="number" {...register("questionTimeSecs")} />
-                  {errors.questionTimeSecs && <p className="text-xs text-destructive">{errors.questionTimeSecs.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Follow-up Time (seconds)</Label>
-                  <Input type="number" {...register("followUpTimeSecs")} />
-                  {errors.followUpTimeSecs && <p className="text-xs text-destructive">{errors.followUpTimeSecs.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Clarify Time (seconds)</Label>
-                  <Input type="number" {...register("clarificationTimeSecs")} />
-                  {errors.clarificationTimeSecs && <p className="text-xs text-destructive">{errors.clarificationTimeSecs.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Activity Time (seconds)</Label>
-                  <Input type="number" {...register("activityTimeSecs")} />
-                  {errors.activityTimeSecs && <p className="text-xs text-destructive">{errors.activityTimeSecs.message}</p>}
+                  <Label>Default Topic Time Limit (secs)</Label>
+                  <Input type="number" {...register("defaultTopicTimeLimitSecs")} />
+                  {errors.defaultTopicTimeLimitSecs && <p className="text-xs text-destructive">{errors.defaultTopicTimeLimitSecs.message}</p>}
                 </div>
               </div>
 
@@ -314,6 +306,35 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
                     <input type="checkbox" id="diffIntensive" value="INTENSIVE" {...register("allowedDifficultyModes")} className="h-4 w-4 accent-primary" />
                     <Label htmlFor="diffIntensive">Intensive</Label>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* ── Rate Limits & Quotas ─────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <FileText className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Rate Limits & Quotas</h2>
+          </div>
+          <Card className="border-border/60 shadow-sm">
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label>Max Job Profiles</Label>
+                  <Input type="number" {...register("maxJobProfiles")} />
+                  {errors.maxJobProfiles && <p className="text-xs text-destructive">{errors.maxJobProfiles.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Max Resume Uploads / Day</Label>
+                  <Input type="number" {...register("maxResumeUploadsPerDay")} />
+                  {errors.maxResumeUploadsPerDay && <p className="text-xs text-destructive">{errors.maxResumeUploadsPerDay.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Max Resumes / Profile</Label>
+                  <Input type="number" {...register("maxResumeUploadsPerJobProfile")} />
+                  {errors.maxResumeUploadsPerJobProfile && <p className="text-xs text-destructive">{errors.maxResumeUploadsPerJobProfile.message}</p>}
                 </div>
               </div>
             </CardContent>
@@ -385,48 +406,8 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
                     <option value="EXHAUSTIVE">Exhaustive</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Max Topics to Grade</Label>
-                  <Input type="number" {...register("maxTopicsInReport")} />
-                  {errors.maxTopicsInReport && <p className="text-xs text-destructive">{errors.maxTopicsInReport.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Max Suggestions</Label>
-                  <Input type="number" {...register("maxSuggestionsCount")} />
-                  {errors.maxSuggestionsCount && <p className="text-xs text-destructive">{errors.maxSuggestionsCount.message}</p>}
-                </div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/50">
-                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
-                  <input 
-                    type="checkbox" 
-                    id="includeActivityReport" 
-                    {...register("includeActivityReport")} 
-                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
-                  />
-                  <Label className="text-base cursor-pointer" htmlFor="includeActivityReport">Include Activity Report</Label>
-                </div>
-                
-                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
-                  <input 
-                    type="checkbox" 
-                    id="includeTopicEvidence" 
-                    {...register("includeTopicEvidence")} 
-                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
-                  />
-                  <Label className="text-base cursor-pointer" htmlFor="includeTopicEvidence">Include Topic Evidence</Label>
-                </div>
-
-                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
-                  <input 
-                    type="checkbox" 
-                    id="includeAuthAnalysis" 
-                    {...register("includeAuthAnalysis")} 
-                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
-                  />
-                  <Label className="text-base cursor-pointer" htmlFor="includeAuthAnalysis">Include Auth Analysis</Label>
-                </div>
 
                 <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
                   <input 
@@ -445,39 +426,7 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
           </Card>
         </section>
 
-        {/* ── AI Models ────────────────────────────────────────────────────── */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b">
-            <Bot className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">AI Models</h2>
-          </div>
-          <Card className="border-border/60 shadow-sm">
-            <CardContent className="pt-6 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Planner Model</Label>
-                  <Input {...register("plannerModel")} />
-                  {errors.plannerModel && <p className="text-xs text-destructive">{errors.plannerModel.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Interview Model</Label>
-                  <Input {...register("interviewModel")} />
-                  {errors.interviewModel && <p className="text-xs text-destructive">{errors.interviewModel.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Judge Model</Label>
-                  <Input {...register("judgeModel")} />
-                  {errors.judgeModel && <p className="text-xs text-destructive">{errors.judgeModel.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Report Model</Label>
-                  <Input {...register("reportModel")} />
-                  {errors.reportModel && <p className="text-xs text-destructive">{errors.reportModel.message}</p>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+
       </form>
 
       <ConfirmationDialog

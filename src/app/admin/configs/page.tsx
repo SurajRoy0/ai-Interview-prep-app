@@ -36,9 +36,10 @@ export default async function AdminConfigPage() {
               <TableHead>Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Default</TableHead>
-              <TableHead className="text-right">Questions</TableHead>
+              <TableHead className="text-right">Topics</TableHead>
               <TableHead className="text-right">Max Follow-ups</TableHead>
-              <TableHead className="text-right">Report Depth</TableHead>
+              <TableHead className="text-right">Max Profiles</TableHead>
+              <TableHead className="text-right">Max Resumes/Day</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -60,9 +61,10 @@ export default async function AdminConfigPage() {
                     '—'
                   )}
                 </TableCell>
-                <TableCell className="text-right">{config.targetTurns}</TableCell>
+                <TableCell className="text-right">{config.targetTopics}</TableCell>
                 <TableCell className="text-right">{config.maxFollowUpsPerTopic}</TableCell>
-                <TableCell className="text-right">{config.reportDepth}</TableCell>
+                <TableCell className="text-right">{config.maxJobProfiles}</TableCell>
+                <TableCell className="text-right">{config.maxResumeUploadsPerDay}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/admin/configs/${config.id}`}>Edit</Link>
@@ -72,7 +74,7 @@ export default async function AdminConfigPage() {
             ))}
             {configs.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No configurations found.
                 </TableCell>
               </TableRow>

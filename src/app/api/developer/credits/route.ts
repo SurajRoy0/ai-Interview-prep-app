@@ -24,7 +24,6 @@ export async function POST(req: Request) {
     userId?: string
     credits?: number
     reason?: string
-    resetFreeInterview?: boolean
   }
 
   try {
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { email, userId, credits = 5, reason = 'dev_grant', resetFreeInterview = false } = body
+  const { email, userId, credits = 5, reason = 'dev_grant' } = body
 
   if (!email && !userId) {
     return NextResponse.json(
@@ -51,7 +50,7 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: email ? { email } : { id: userId! },
-    select: { id: true, email: true, name: true, freeInterviewUsed: true, credits: true },
+    select: { id: true, email: true, name: true, joiningBonusGranted: true, credits: true },
   })
 
   if (!user) {
@@ -61,18 +60,13 @@ export async function POST(req: Request) {
     )
   }
 
-  const [creditRecord] = await prisma.$transaction([
-    prisma.interviewCredit.create({
-      data: {
-        userId: user.id,
-        credits,
-        reason,
-      },
-    }),
-    ...(resetFreeInterview
-      ? [prisma.user.update({ where: { id: user.id }, data: { freeInterviewUsed: false } })]
-      : []),
-  ])
+  const creditRecord = await prisma.credit.create({
+    data: {
+      userId: user.id,
+      amount: credits,
+      reason,
+    },
+  })
 
   const updatedUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -80,9 +74,9 @@ export async function POST(req: Request) {
       id: true,
       email: true,
       name: true,
-      freeInterviewUsed: true,
+      joiningBonusGranted: true,
       credits: {
-        select: { id: true, credits: true, reason: true, createdAt: true },
+        select: { id: true, amount: true, reason: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
       },
     },
@@ -100,8 +94,8 @@ export async function POST(req: Request) {
         id: updatedUser!.id,
         email: updatedUser!.email,
         name: updatedUser!.name,
-        freeInterviewUsed: updatedUser!.freeInterviewUsed,
-        totalCreditBalance: updatedUser!.credits.reduce((sum, c) => sum + c.credits, 0),
+        joiningBonusGranted: updatedUser!.joiningBonusGranted,
+        totalCreditBalance: updatedUser!.credits.reduce((sum, c) => sum + c.amount, 0),
         creditRecords: updatedUser!.credits,
       },
     },

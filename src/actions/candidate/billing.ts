@@ -25,7 +25,7 @@ export async function getBillingHistoryAction() {
       orderBy: { createdAt: 'desc' },
     })
 
-    const credits = await prisma.interviewCredit.findMany({
+    const credits = await prisma.credit.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' },
     })
@@ -43,20 +43,8 @@ export async function getBillingHistoryAction() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { createdAt: true, freeInterviewUsed: true },
+      select: { createdAt: true },
     })
-
-    if (user) {
-      ledger.push({
-        id: 'free-grant',
-        date: user.createdAt,
-        type: 'GRANT',
-        title: 'Free Session Granted',
-        description: 'Welcome bonus',
-        amount: '+1 Credit',
-        status: 'SUCCESS',
-      })
-    }
 
     for (const p of payments) {
       ledger.push({
@@ -71,13 +59,14 @@ export async function getBillingHistoryAction() {
     }
 
     for (const c of credits) {
+      if (c.reason === 'consumed') continue
       ledger.push({
         id: c.id,
         date: c.createdAt,
         type: 'GRANT',
         title: 'Credits Added',
         description: c.reason === 'dev_grant' ? 'Developer Grant' : (c.reason ?? 'Granted'),
-        amount: `+${c.credits} Credits`,
+        amount: `+${c.amount} Credits`,
         status: 'SUCCESS',
       })
     }

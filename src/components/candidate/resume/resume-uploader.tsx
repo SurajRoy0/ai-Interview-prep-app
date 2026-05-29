@@ -4,7 +4,15 @@ import { useState, useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
 import { uploadResumeAction } from "@/actions/candidate/resume"
 import { toast } from "sonner"
-import { UploadCloud, FileText, Loader2, AlertCircle, Sparkles } from "lucide-react"
+import { UploadCloud, FileText, Loader2, AlertCircle, Sparkles, Lock } from "lucide-react"
+import { useAppStore } from "@/components/providers/app-store-provider"
+import { useRouter } from "next/navigation"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const LOADING_MESSAGES = [
   "Reading your resume like a recruiter on 2 coffees ☕",
@@ -17,13 +25,18 @@ const LOADING_MESSAGES = [
 interface Props {
   jobProfileId: string
   isServerProcessing?: boolean
+  currentCount?: number
 }
 
-export function ResumeUploader({ jobProfileId, isServerProcessing }: Props) {
+export function ResumeUploader({ jobProfileId, isServerProcessing, currentCount }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [messageIndex, setMessageIndex] = useState(0)
+  const router = useRouter()
+
+  const planConfig = useAppStore(state => state.planConfig)
+  const isLimitReached = planConfig && currentCount !== undefined ? currentCount >= planConfig.maxResumeUploadsPerJobProfile : false
 
   // Clear internal states if server finished processing
   useEffect(() => {
@@ -34,11 +47,12 @@ export function ResumeUploader({ jobProfileId, isServerProcessing }: Props) {
   }, [isServerProcessing])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (isLimitReached) return
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0])
       setUploadError(null)
     }
-  }, [])
+  }, [isLimitReached])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -63,6 +77,7 @@ export function ResumeUploader({ jobProfileId, isServerProcessing }: Props) {
       const result = await uploadResumeAction(formData)
       if (result.success) {
         toast.success("Resume uploaded! AI is analyzing it now.")
+        router.refresh()
       } else {
         setUploadError(result.error?.message || "Upload failed")
         setIsUploading(false)
@@ -125,35 +140,58 @@ export function ResumeUploader({ jobProfileId, isServerProcessing }: Props) {
       )}
 
       {!file ? (
-        <div
-          {...getRootProps()}
-          className={`relative border-2 border-dashed rounded-3xl p-10 text-center cursor-pointer transition-all duration-300 group ${
-            isDragActive
-              ? "border-primary bg-primary/5 shadow-primary-glow"
-              : "border-border/60 hover:border-primary/40 hover:bg-surface-1"
-          }`}
-        >
-          <input {...getInputProps()} />
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                {...(isLimitReached ? {} : getRootProps())}
+                className={`relative border-2 border-dashed rounded-3xl p-10 text-center transition-all duration-300 group ${
+                  isLimitReached 
+                    ? "border-border/40 bg-surface-1/50 opacity-60 cursor-not-allowed" 
+                    : isDragActive
+                      ? "border-primary bg-primary/5 shadow-primary-glow cursor-pointer"
+                      : "border-border/60 hover:border-primary/40 hover:bg-surface-1 cursor-pointer"
+                }`}
+              >
+                {!isLimitReached && <input {...getInputProps()} />}
 
-          {/* Icon */}
-          <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5 transition-colors ${
-            isDragActive ? "bg-primary text-primary-foreground shadow-md" : "bg-surface-2 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-          }`}>
-            <UploadCloud className={`w-8 h-8 ${isDragActive ? "animate-bounce" : ""}`} />
-          </div>
+                {/* Icon */}
+                <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5 transition-colors ${
+                  isLimitReached ? "bg-surface-2 text-muted-foreground/50" :
+                  isDragActive ? "bg-primary text-primary-foreground shadow-md" : "bg-surface-2 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                }`}>
+                  {isLimitReached ? (
+                    <Lock className="w-6 h-6" />
+                  ) : (
+                    <UploadCloud className={`w-8 h-8 ${isDragActive ? "animate-bounce" : ""}`} />
+                  )}
+                </div>
 
-          <h3 className={`text-lg font-bold mb-1 transition-colors ${isDragActive ? "text-primary" : "text-foreground"}`}>
-            {isDragActive ? "Drop to upload" : "Upload new resume"}
-          </h3>
-          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-            Drag & drop your PDF or DOCX here, or click to browse
-          </p>
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-            <span>PDF / DOCX</span>
-            <span className="w-1 h-1 rounded-full bg-border" />
-            <span>Max 5MB</span>
-          </div>
-        </div>
+                <h3 className={`text-lg font-bold mb-1 transition-colors ${
+                  isLimitReached ? "text-muted-foreground" :
+                  isDragActive ? "text-primary" : "text-foreground"
+                }`}>
+                  {isLimitReached ? "Upload Limit Reached" : isDragActive ? "Drop to upload" : "Upload new resume"}
+                </h3>
+                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                  {isLimitReached ? "You cannot upload any more resumes to this profile." : "Drag & drop your PDF or DOCX here, or click to browse"}
+                </p>
+                {!isLimitReached && (
+                  <div className="mt-6 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    <span>PDF / DOCX</span>
+                    <span className="w-1 h-1 rounded-full bg-border" />
+                    <span>Max 5MB</span>
+                  </div>
+                )}
+              </div>
+            </TooltipTrigger>
+            {isLimitReached && (
+              <TooltipContent side="top" className="bg-destructive text-destructive-foreground">
+                <p>You have reached your plan limit of {planConfig?.maxResumeUploadsPerJobProfile} resume(s) per job profile.</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       ) : (
         <div className="bg-surface-1 border border-border/50 rounded-2xl p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

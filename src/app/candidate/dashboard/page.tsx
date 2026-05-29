@@ -122,7 +122,7 @@ export default async function DashboardPage() {
                 <Link href="/candidate/job-profiles">View all</Link>
               </Button>
             )}
-            <CreateProfileDialog>
+            <CreateProfileDialog currentCount={totalCount}>
               <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-8 text-xs border-border/60">
                 <Plus className="h-3.5 w-3.5" /> New Profile
               </Button>
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
             <p className="text-sm text-muted-foreground max-w-xs mb-6 leading-relaxed">
               Create a profile for each role you&apos;re targeting. Then upload your resume and start a tailored interview.
             </p>
-            <CreateProfileDialog>
+            <CreateProfileDialog currentCount={totalCount}>
               <Button size="sm" className="rounded-full gap-2 shadow-primary-glow">
                 <Plus className="h-4 w-4" /> Create First Profile
               </Button>

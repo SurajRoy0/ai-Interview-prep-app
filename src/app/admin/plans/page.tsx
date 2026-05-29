@@ -65,7 +65,7 @@ export default async function AdminPlansPage() {
                 <TableCell className="text-right">
                   {plan.amountPaise ? `₹${plan.amountPaise / 100} / ${plan.billingInterval === 'ONE_TIME' ? 'once' : plan.billingInterval === 'MONTHLY' ? 'mo' : plan.billingInterval === 'QUARTERLY' ? 'qtr' : 'yr'}` : 'Free'}
                 </TableCell>
-                <TableCell className="text-right">{plan.interviewCredits}</TableCell>
+                <TableCell className="text-right">{plan.includedCredits}</TableCell>
                 <TableCell className="text-right">
                   {plan.planConfig?.name || <span className="text-destructive">Missing</span>}
                 </TableCell>

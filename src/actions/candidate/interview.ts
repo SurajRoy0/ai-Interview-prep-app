@@ -31,36 +31,27 @@ export async function createInterviewAction(
       if (!jobProfile) return failure('Job profile not found', 'NOT_FOUND')
       if (!jobProfile.activeResume) return failure('You must activate a resume before starting an interview.', 'BAD_REQUEST')
 
-      const freeCredit = !user.freeInterviewUsed ? 1 : 0
-
-      const grantsResult = await tx.interviewCredit.aggregate({
+      const creditsResult = await tx.credit.aggregate({
         where: {
           userId,
           OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
-        _sum: { credits: true },
+        _sum: { amount: true },
       })
-      const grantedCredits = grantsResult._sum.credits || 0
+      const balance = creditsResult._sum.amount || 0
 
-      const usedCredits = await tx.interview.count({
-        where: {
-          userId,
-          status: { notIn: ['PENDING'] },
-        },
-      })
-
-      const balance = freeCredit + grantedCredits - usedCredits
-
-      if (balance <= 0) {
+      if (balance < 1) {
         return failure('You have no interview credits remaining. Please upgrade your plan or purchase more credits.', 'INSUFFICIENT_CREDITS')
       }
 
-      if (!user.freeInterviewUsed) {
-        await tx.user.update({
-          where: { id: userId },
-          data: { freeInterviewUsed: true },
-        })
-      }
+      // Consume 1 credit
+      await tx.credit.create({
+        data: {
+          userId,
+          amount: -1,
+          reason: 'consumed'
+        }
+      })
 
       const planConfig = await getUserActivePlanConfig(userId)
 
@@ -83,7 +74,7 @@ export async function createInterviewAction(
           type,
           status: 'PENDING',
           planStatus: 'PENDING',
-          totalQuestions: planConfig.targetTurns,
+          totalTopics: planConfig.targetTopics,
           maxPauseCount: planConfig.maxPauseCount,
         },
       })

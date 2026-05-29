@@ -8,6 +8,13 @@ import { createJobProfileSchema } from "@repo/shared"
 import type { z } from "zod"
 import { createJobProfileAction } from "@/actions/candidate/job-profile"
 import { toast } from "sonner"
+import { useAppStore } from "@/components/providers/app-store-provider"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   Dialog,
   DialogContent,
@@ -32,12 +39,16 @@ type FormData = z.infer<typeof createJobProfileSchema>
 
 interface Props {
   children: React.ReactNode
+  currentCount?: number
 }
 
-export function CreateProfileDialog({ children }: Props) {
+export function CreateProfileDialog({ children, currentCount }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const planConfig = useAppStore(state => state.planConfig)
+
+  const isLimitReached = planConfig && currentCount !== undefined ? currentCount >= planConfig.maxJobProfiles : false
 
   const { register, handleSubmit, setValue, reset, formState: { errors } } =
     useForm<FormData>({
@@ -71,9 +82,31 @@ export function CreateProfileDialog({ children }: Props) {
   return (
     <>
       {/* Trigger — whatever you pass as children */}
-      <span onClick={() => setOpen(true)} className="cursor-pointer">
-        {children}
-      </span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span
+              onClick={(e) => {
+                if (isLimitReached) {
+                  e.preventDefault()
+                  return
+                }
+                setOpen(true)
+              }}
+              className={isLimitReached ? "cursor-not-allowed opacity-50 inline-block" : "cursor-pointer inline-block"}
+            >
+              <div className={isLimitReached ? "pointer-events-none" : ""}>
+                {children}
+              </div>
+            </span>
+          </TooltipTrigger>
+          {isLimitReached && (
+            <TooltipContent side="top" className="bg-destructive text-destructive-foreground">
+              <p>You have reached your plan limit of {planConfig?.maxJobProfiles} job profile(s).</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
 
       <Dialog open={open} onOpenChange={val => { if (!loading) setOpen(val) }}>
         <DialogContent className="sm:max-w-[480px]">

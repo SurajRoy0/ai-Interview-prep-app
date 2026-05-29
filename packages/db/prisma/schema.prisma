@@ -81,23 +81,23 @@ enum QuestionType {
 
 enum TopicStatus {
   PENDING // Not yet reached in interview sequence
-  ACTIVE // Candidate is currently on this question
+  ACTIVE // Candidate is currently on this topic
   CLOSED // Completed — judge ran or is running
   SKIPPED // Candidate skipped or interview ended before this was reached
 }
 
 enum TopicCloseReason {
-  TIME_EXPIRED // Total topic budget elapsed
+  TOPIC_TIME_LIMIT_REACHED // Fallback timer fired — no candidate response
   MAX_FOLLOWUPS_REACHED // Hit maxFollowUpsPerTopic from config
-  AI_ADVANCED // AI decided answer sufficient, set moveToNext: true
-  USER_ADVANCED // Candidate explicitly said next/skip
-  SAFETY_CAP // Hit hardCapTurnsPerTopic absolute ceiling
+  MAX_CLARIFICATION_REACHED // Hit maxClarificationsPerTopic from config
+  AI_COMPLETED // AI decided answer sufficient, set moveToNext: true
+  USER_SKIPPED // Candidate explicitly said next/skip
   INTERVIEW_PAUSED // Saved mid-topic due to pause
-  INTERVIEW_ENDED // Interview ended before topic closed naturally
+  INTERVIEW_ENDED // Interview ended before this topic closed naturally
 }
 
 enum TurnRole {
-  AI // Interviewer — question, follow-up, hint, transition
+  AI // Interviewer — question, follow-up, hint, closure
   USER // Candidate — answer, clarification, code submission
 }
 
@@ -107,7 +107,7 @@ enum TurnType {
   FOLLOWUP // AI probing deeper on same topic
   CLARIFICATION_RESPONSE // AI re-explaining after candidate confusion
   HINT // Activity only — nudges without revealing answer
-  TOPIC_TRANSITION // Brief bridging line before next question streams
+  TOPIC_CLOSURE // AI closes the topic with a summary message
 
   // USER turn types
   ANSWER // Main answer to the question
@@ -119,13 +119,10 @@ enum TurnType {
 }
 
 enum ActivityType {
-  DEBUGGING // Show broken code, candidate finds the bug (voice)
-  CODE_CORRECTION // Show broken code, candidate fixes it in editor
-  OUTPUT_PREDICTION // Show code, candidate predicts exact output (voice)
-  RESUME_DEFENCE // Defend a specific resume claim (voice)
-  PRIORITISATION // Rank/order production scenarios (textarea)
-  COMMUNICATION // Explain a concept simply to a fresher (voice)
-  SYSTEM_DESIGN_MINI // Quick architecture sketch question (textarea)
+  DEBUGGING // Find and explain bug in code
+  CODE_CORRECTION // Fix broken code in editor
+  OUTPUT_PREDICTION // Predict execution result
+  PRIORITISATION // Rank actions/scenarios
 }
 
 enum InputMode {
@@ -139,13 +136,10 @@ enum InputMode {
 enum QuestionCategory {
   HR
   RESUME_BASED
-  FOLLOW_UP_DEPTH
   CONCEPTUAL
   SCENARIO
   BEHAVIORAL
-  PRESSURE
-  REFLECTION
-  COMMUNICATION_SIMPLIFICATION
+  SYSTEM_DESIGN
   ACTIVITY
 }
 
@@ -156,13 +150,9 @@ enum QuestionDifficulty {
 }
 
 enum PsychologicalIntent {
-  CONFIDENCE_CHECK // Warm up, build comfort
-  DEPTH_PROBE // Go deeper on a topic
-  PRESSURE_TEST // Challenge a claim or weak area
-  CLARITY_CHECK // Assess communication quality
-  REASONING_EVAL // Evaluate problem-solving process
-  AUTHENTICITY_CHECK // Validate a resume claim by name
-  REFLECTION_TRIGGER // Force self-analysis
+  EXPLORE
+  VALIDATE
+  CHALLENGE
 }
 
 enum ImprovementPriority {
@@ -216,7 +206,7 @@ enum VisibilityStatus {
 // PLAN CONFIG
 // Why: The flat technical behaviour specification for a
 //      tier. Controls every aspect of the interview engine:
-//      planner, timing, pause limits, difficulty options,
+//      planner, pause limits, difficulty options,
 //      resume parser depth, report depth, and AI models.
 //
 //      Admin-managed. One record per tier or context.
@@ -236,28 +226,27 @@ model PlanConfig {
   isActive  Boolean @default(true)
 
   // ── PLANNER CONTROLS ──────────────────────────────────────
-  // targetTurns: core Q&A count — follow-ups never count against this
-  targetTurns          Int @default(8)
-  maxFollowUpsPerTopic Int @default(2) // how deep AI probes per question
-  hardCapTurnsPerTopic Int @default(8) // absolute safety ceiling per topic
+  // targetTopics: core Q&A count — follow-ups never count against this
+  targetTopics              Int @default(8)
+  maxFollowUpsPerTopic      Int @default(2) // how deep AI probes per topic
+  maxClarificationsPerTopic Int @default(2) // how many clarifications per topic
 
   // Activity composition — JSON map of ActivityType → count
   // e.g. {"DEBUGGING": 2, "CODE_CORRECTION": 1, "SYSTEM_DESIGN_MINI": 1}
   // Set all values to 0 for pure Q&A during dev/testing
   activityConfig Json @default("{}")
 
-  // ── TIMING CONTROLS ───────────────────────────────────────
-  questionTimeSecs      Int @default(120) // total budget per Q&A topic
-  followUpTimeSecs      Int @default(90) // per-turn timer for follow-up responses
-  clarificationTimeSecs Int @default(30) // per-turn timer for clarification exchanges
-  activityTimeSecs      Int @default(300) // total budget per activity topic
+  // ── INACTIVITY FALLBACK TIMER ─────────────────────────────
+  // Topics close via AI logic (moveToNext) or candidate action first.
+  // This timer is the safety net — fires only when candidate goes silent.
+  defaultTopicTimeLimitSecs Int @default(600) // Default time budget for a topic. Used when InterviewTopic.timeLimitSeconds is null.
 
   // ── PAUSE / RESUME CONTROLS ───────────────────────────────
   maxPauseCount       Int @default(2) // how many times candidate can pause
   resumeDeadlineHours Int @default(24) // hours before a paused interview expires
 
   // ── DIFFICULTY CONTROLS ───────────────────────────────────
-  // Filters which DifficultyProgression options the candidate may choose
+  // Filters which DifficultyProgression options the candidate may choose.
   // Free tier example: [GRADUAL] — no choice, always warm up
   // Pro example:       [GRADUAL, ADAPTIVE, INTENSIVE] — full choice
   allowedDifficultyModes DifficultyProgression[] @default([GRADUAL, ADAPTIVE, INTENSIVE])
@@ -269,27 +258,21 @@ model PlanConfig {
   maxExperienceYears   Int     @default(10) // how far back to read work history
 
   // ── REPORT CONTROLS ───────────────────────────────────────
-  reportDepth           ReportDepth @default(STANDARD)
-  maxTopicsInReport     Int         @default(5) // top N topics graded in report
-  maxSuggestionsCount   Int         @default(3) // improvement suggestions shown
-  includeActivityReport Boolean     @default(true) // include activity scores
-  includeTopicEvidence  Boolean     @default(false) // include answer quote evidence
-  includeAuthAnalysis   Boolean     @default(false) // resume claim validation section
-
-  // Upsell gate — show teaser report, full report costs 1 credit
-  reportUnlockable Boolean @default(false)
-
-  // ── AI MODEL CONTROLS ─────────────────────────────────────
-  // Each task independently points to a model string.
-  // Swap any model per tier with zero code change.
-  plannerModel   String @default("gemini-2.5-flash")
-  interviewModel String @default("gemini-2.5-flash")
-  judgeModel     String @default("gemini-2.5-flash")
-  reportModel    String @default("gemini-2.5-flash")
+  // reportDepth drives all report section gates:
+  //   MINIMAL    → scores + summary only
+  //   STANDARD   → + topic analysis + suggestions
+  //   DETAILED   → + per-question breakdown + authenticity analysis + activity report
+  //   EXHAUSTIVE → + raw judge data + full topic evidence
+  reportDepth      ReportDepth @default(STANDARD)
+  reportUnlockable Boolean     @default(false) // Upsell gate — teaser shown, full report costs 1 credit
 
   // ── QUESTION GENERATION MODE ──────────────────────────────
-  // HYBRID: intents fixed at creation, question text generated when topic opens
   questionGenMode QuestionGenMode @default(HYBRID)
+
+  // ── RATE LIMITS & QUOTAS ─────────────────────────────────
+  maxResumeUploadsPerJobProfile Int @default(1) // Free=1, Pro=many
+  maxResumeUploadsPerDay        Int @default(1)
+  maxJobProfiles                Int @default(1)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -327,9 +310,9 @@ model Plan {
   amountPaise     Int?
   billingInterval BillingInterval @default(ONE_TIME)
 
-  // Credits granted at the start of each billing period
+  // Interview credits granted at the start of each billing period
   // or immediately on one-time purchase
-  interviewCredits Int @default(1)
+  includedCredits Int @default(1)
 
   // Technical behaviour for this plan
   planConfigId String
@@ -365,10 +348,10 @@ model User {
   isActive      Boolean @default(true)
   emailVerified Boolean @default(false)
 
-  visibilityStatus VisibilityStatus @default(PRIVATE)
+  // This is used to reward the candidate for joining the interview.
+  joiningBonusGranted Boolean @default(false)
 
-  // Credit gate — first interview is free
-  freeInterviewUsed Boolean @default(false)
+  visibilityStatus VisibilityStatus @default(PRIVATE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -378,7 +361,7 @@ model User {
   interviews    Interview[]
   subscriptions Subscription[]
   payments      Payment[]
-  credits       InterviewCredit[]
+  credits       Credit[]
   sessions      Session[]
   accounts      Account[]
   auditLogs     AuditLog[]
@@ -545,7 +528,7 @@ model Resume {
 // INTERVIEW
 // Why: Core product entity. One end-to-end interview session.
 //      Frozen against one resume snapshot and one PlanConfig
-//      snapshot. Contains the adaptive question sequence,
+//      snapshot. Contains the adaptive topic sequence,
 //      pause state, scores, and links to the final report.
 // ======================================================
 
@@ -590,15 +573,15 @@ model Interview {
   // Question text is generated dynamically per HYBRID mode
   // when each topic becomes ACTIVE.
   interviewPlan Json?
-  planGenerated Boolean @default(false)
+  planGenerated Boolean   @default(false)
   planStatus    JobStatus @default(PENDING)
   planError     String?
 
   // ── PROGRESS ─────────────────────────────────────────────
-  totalQuestions       Int @default(8) // copied from planConfig.targetTurns + activities
-  currentQuestionIndex Int @default(0) // index of the currently ACTIVE InterviewQuestion
-  activitiesCompleted  Int @default(0)
-  activitiesPlanned    Int @default(0)
+  totalTopics         Int @default(8) // targetTopics + activities
+  currentTopicIndex   Int @default(0) // index of the currently ACTIVE InterviewTopic
+  activitiesCompleted Int @default(0)
+  activitiesPlanned   Int @default(0)
 
   // ── PAUSE / RESUME ───────────────────────────────────────
   pauseCount     Int          @default(0)
@@ -628,7 +611,7 @@ model Interview {
   updatedAt DateTime @updatedAt
 
   // Relations
-  questions   InterviewQuestion[]
+  topics      InterviewTopic[]
   analytics   InterviewAnalytics?
   report      InterviewReport?
   suggestions ImprovementSuggestion[]
@@ -642,19 +625,19 @@ model Interview {
 }
 
 // ======================================================
-// INTERVIEW QUESTION (Topic / Thread)
+// INTERVIEW TOPIC
 // Why: The core architectural unit of the interview.
-//      Each planned question is a self-contained topic.
-//      All turns for that question live inside it —
-//      clarifications, follow-ups, hints, code submissions.
+//      Each planned topic is a self-contained conversation
+//      thread. All turns live inside it — clarifications,
+//      follow-ups, hints, code submissions.
 //      Judge result lives here.
 //      Only the judgeSummary crosses topic boundaries.
 //
-//      The quota counter is questionIndex.
+//      The quota counter is topicIndex.
 //      Follow-up turns inside a topic never increment it.
 // ======================================================
 
-model InterviewQuestion {
+model InterviewTopic {
   id          String    @id @default(cuid())
   interviewId String
   interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
@@ -662,7 +645,7 @@ model InterviewQuestion {
   // 1..N — the quota counter.
   // Both QA and ACTIVITY types count toward this total.
   // Follow-up and clarification turns do NOT increment this.
-  questionIndex Int
+  topicIndex Int
 
   type QuestionType // QA | ACTIVITY
 
@@ -673,7 +656,7 @@ model InterviewQuestion {
   plannedDifficulty QuestionDifficulty?
 
   // ── GENERATED WHEN TOPIC OPENS (HYBRID mode) ─────────────
-  // Null until this question becomes ACTIVE.
+  // Null until this topic becomes ACTIVE.
   // Generated using prior topic summaries + planned intent +
   // candidate's running performance (for ADAPTIVE difficulty).
   questionText String? @db.Text
@@ -683,10 +666,12 @@ model InterviewQuestion {
   codeSnippet    String?       @db.Text // shown to candidate in code editor
   expectedAnswer String?       @db.Text // NEVER sent to client — judge reads internally
 
+  // Per-topic window — how long the candidate will get time for this topic.
+  timeLimitSeconds Int?
+  remainingSeconds Int?
+
   // ── TIMING ───────────────────────────────────────────────
-  timeLimitSeconds Int // total topic budget — copied from planConfig at creation
-  elapsedSeconds   Int  @default(0) // updated after each turn completes
-  remainingSeconds Int? // saved on pause, restored on resume
+  timeUsedSeconds Int? // how long candidate actually took
 
   // ── STATE ────────────────────────────────────────────────
   status      TopicStatus       @default(PENDING)
@@ -696,9 +681,9 @@ model InterviewQuestion {
 
   // ── JUDGE RESULT ─────────────────────────────────────────
   // Populated async after topic closes.
-  // Runs in parallel with next question streaming —
+  // Runs in parallel with next topic streaming —
   // candidate never waits for the judge.
-  judgeSummary    String?   @db.Text // 1–2 sentences — carried as context for future questions
+  judgeSummary    String?   @db.Text // 1–2 sentences — context for future topics
   judgeScore      Int? // 0–100
   judgeStrengths  String[]
   judgeWeaknesses String[]
@@ -706,10 +691,10 @@ model InterviewQuestion {
   judgeRetryCount Int       @default(0) // auto-retried up to 3 times on failure
   judgedAt        DateTime?
 
-  turns InterviewTurn[]
+  turns TopicTurn[]
 
+  @@unique([interviewId, topicIndex])
   @@index([interviewId])
-  @@index([interviewId, questionIndex])
   @@index([interviewId, status])
 }
 
@@ -723,12 +708,12 @@ model InterviewQuestion {
 //      all candidate input regardless of input mode.
 // ======================================================
 
-model InterviewTurn {
-  id                  String            @id @default(cuid())
-  interviewQuestionId String
-  interviewQuestion   InterviewQuestion @relation(fields: [interviewQuestionId], references: [id], onDelete: Cascade)
+model TopicTurn {
+  id      String         @id @default(cuid())
+  topicId String
+  topic   InterviewTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-  // Denormalized — avoids joining through InterviewQuestion
+  // Denormalized — avoids joining through InterviewTopic
   // for queries that need all turns across an interview
   interviewId String
 
@@ -747,21 +732,19 @@ model InterviewTurn {
   content String? @db.Text
 
   // ── AI TURN METADATA ─────────────────────────────────────
-  moveToNext         Boolean    @default(false) // AI signals this topic should close after this turn
+  moveToNext         Boolean    @default(false) // AI signals topic should close after this turn
   suggestedInputMode InputMode? // what input the frontend should show next
-  timeLimitSeconds   Int? // how long candidate has to respond to this turn
-
-  // ── TIMING ───────────────────────────────────────────────
-  timeUsedSeconds Int? // how long the candidate actually took — feeds analytics
 
   // ── PERFORMANCE ──────────────────────────────────────────
   latencyMs          Int? // server: time from request received to first token sent
   streamingLatencyMs Int? // client: time from action call to first token rendered
+  timeUsedSeconds    Int?
   tokenUsage         Int?
 
   createdAt DateTime @default(now())
 
-  @@index([interviewQuestionId])
+  @@unique([topicId, turnIndex])
+  @@index([topicId])
   @@index([interviewId])
   @@index([interviewId, turnIndex])
 }
@@ -800,11 +783,10 @@ model InterviewReport {
   weakTopics Json
 
   // TopicAnalysis[] — topic, score, trend note
-  // Capped by planConfig.maxTopicsInReport
   topicAnalysis Json
 
   // ActivitySummary[] — type, score, note
-  // Null if planConfig.includeActivityReport = false
+  // Populated only when reportDepth >= DETAILED
   activitySummary Json?
 
   // CommunicationAnalysis struct
@@ -814,11 +796,11 @@ model InterviewReport {
   confidenceAnalysis Json
 
   // AuthenticityAnalysis struct
-  // Null if planConfig.includeAuthAnalysis = false
+  // Populated only when reportDepth >= DETAILED
   authenticityAnalysis Json?
 
-  // QuestionBreakdown[] — score, strengths, weaknesses per question
-  // Only populated if reportDepth >= DETAILED
+  // QuestionBreakdown[] — score, strengths, weaknesses per topic
+  // Populated only when reportDepth >= DETAILED
   questionBreakdown Json?
 
   // Depth used to generate this report — from planConfigSnapshot
@@ -858,8 +840,8 @@ model ImprovementSuggestion {
 
   externalUrl String?
 
-  // Which question indices triggered this suggestion
-  relatedQuestionIds String[]
+  // Which topic indices triggered this suggestion
+  relatedTopicIds String[]
 
   dismissed Boolean @default(false)
 
@@ -899,7 +881,7 @@ model InterviewAnalytics {
   avgAnswerDurationMs  Int?
 
   // Completion
-  abandonedAtQuestion Int? // questionIndex where candidate left
+  abandonedAtTopic    Int? // topicIndex where candidate left
   completionRate      Float?
   activitiesCompleted Int?
   pauseCount          Int?
@@ -908,24 +890,26 @@ model InterviewAnalytics {
 }
 
 // ======================================================
-// INTERVIEW CREDIT
-// Why: Credit units that gate interview access.
-//      Free signup = 1 credit. Paid = purchased credits.
-//      Decoupled from subscriptions for flexibility.
+// CREDIT
+// Why: Ledger of interview credit transactions per user.
+//      Each row is one credit event — not a running balance.
+//      Balance is always derived: SUM(amount) WHERE not expired.
 //
-//      Credit consumed when first question is DELIVERED —
-//      not on interview creation, not on plan generation.
+//      Sources: joining_bonus | purchase | subscription | refund | admin_grant
+//      Consumed when first question is DELIVERED — not on creation.
 // ======================================================
 
-model InterviewCredit {
+model Credit {
   id String @id @default(cuid())
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  credits Int @default(0)
+  // Units of interview access granted (positive) or consumed (negative).
+  // e.g. joining_bonus = +1, interview consumed = -1, refund = +1
+  amount Int @default(0)
 
-  // 'signup_free' | 'purchase' | 'subscription' | 'refund' | 'admin_grant'
+  // 'joining_bonus' | 'purchase' | 'subscription' | 'refund' | 'admin_grant' | 'consumed'
   reason String?
 
   expiresAt DateTime?
@@ -979,8 +963,7 @@ model Payment {
 // ======================================================
 // SUBSCRIPTION
 // Why: A specific user's active purchase of a Plan.
-//      Tracks billing period, credits remaining, and
-//      payment provider subscription reference.
+//      Tracks billing period and payment provider reference.
 //
 //      User → Subscription → Plan → PlanConfig
 //      This chain resolves the technical behaviour
@@ -993,12 +976,10 @@ model Subscription {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // The plan this subscription is for
   planId String
   plan   Plan   @relation(fields: [planId], references: [id])
 
-  status         SubscriptionStatus
-  interviewsLeft Int                @default(0) // decrements on each credit consumption
+  status SubscriptionStatus
 
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
@@ -1010,7 +991,6 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
-  @@index([status])
   @@index([userId, status])
   @@index([providerSubId])
 }
