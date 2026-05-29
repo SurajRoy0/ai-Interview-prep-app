@@ -21,10 +21,7 @@ const activityConfigExample = `{
   "DEBUGGING": 2,
   "CODE_CORRECTION": 1,
   "OUTPUT_PREDICTION": 1,
-  "RESUME_DEFENCE": 1,
-  "PRIORITISATION": 1,
-  "COMMUNICATION": 1,
-  "SYSTEM_DESIGN_MINI": 1
+  "PRIORITISATION": 1
 }`
 
 interface ConfigFormProps {

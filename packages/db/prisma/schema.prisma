@@ -119,13 +119,10 @@ enum TurnType {
 }
 
 enum ActivityType {
-  DEBUGGING // Show broken code, candidate finds the bug (voice)
-  CODE_CORRECTION // Show broken code, candidate fixes it in editor
-  OUTPUT_PREDICTION // Show code, candidate predicts exact output (voice)
-  RESUME_DEFENCE // Defend a specific resume claim (voice)
-  PRIORITISATION // Rank/order production scenarios (textarea)
-  COMMUNICATION // Explain a concept simply to a fresher (voice)
-  SYSTEM_DESIGN_MINI // Quick architecture sketch question (textarea)
+  DEBUGGING // Find and explain bug in code
+  CODE_CORRECTION // Fix broken code in editor
+  OUTPUT_PREDICTION // Predict execution result
+  PRIORITISATION // Rank actions/scenarios
 }
 
 enum InputMode {
@@ -139,13 +136,10 @@ enum InputMode {
 enum QuestionCategory {
   HR
   RESUME_BASED
-  FOLLOW_UP_DEPTH
   CONCEPTUAL
   SCENARIO
   BEHAVIORAL
-  PRESSURE
-  REFLECTION
-  COMMUNICATION_SIMPLIFICATION
+  SYSTEM_DESIGN
   ACTIVITY
 }
 
@@ -156,13 +150,9 @@ enum QuestionDifficulty {
 }
 
 enum PsychologicalIntent {
-  CONFIDENCE_CHECK // Warm up, build comfort
-  DEPTH_PROBE // Go deeper on a topic
-  PRESSURE_TEST // Challenge a claim or weak area
-  CLARITY_CHECK // Assess communication quality
-  REASONING_EVAL // Evaluate problem-solving process
-  AUTHENTICITY_CHECK // Validate a resume claim by name
-  REFLECTION_TRIGGER // Force self-analysis
+  EXPLORE
+  VALIDATE
+  CHALLENGE
 }
 
 enum ImprovementPriority {
