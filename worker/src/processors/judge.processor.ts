@@ -54,7 +54,10 @@ console.log(`[JudgeWorker] Processing job ${job.id} for interview ${interviewId}
       content: turn.content ?? "",
     }));
 
+    
     const result = await evaluateTopicWithAI(judgeTopic, transcript);
+
+console.log(`judge result for topic ${topicId}:`, result);
 
     await prisma.interviewTopic.update({
       where: {
