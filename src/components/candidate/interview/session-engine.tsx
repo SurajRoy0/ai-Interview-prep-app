@@ -53,6 +53,9 @@ export function SessionEngine({ interviewId }: SessionEngineProps) {
       
       // Auto-start stream if the active topic has no turns (it's brand new)
       const activeTopic = fetchedInterview.topics.find((t: InterviewTopic) => t.status === 'ACTIVE')
+
+
+
       if (activeTopic && activeTopic.turns.length === 0) {
         await triggerAiTurn()
       }
@@ -64,6 +67,7 @@ export function SessionEngine({ interviewId }: SessionEngineProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interviewId, router])
+
 
   React.useEffect(() => {
     initialize()
@@ -97,7 +101,7 @@ export function SessionEngine({ interviewId }: SessionEngineProps) {
       for await (const chunk of readStreamableValue(stream)) {
         if (chunk) setStreamingText(chunk)
       }
-      
+
       // When stream finishes, we need to re-fetch the true state from DB 
       // to get the final AI turn metadata (like if moveToNext was true)
       await initialize()

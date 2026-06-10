@@ -151,10 +151,11 @@ export async function streamAiTurnAction(
   const previousTopics = interview.topics.filter(
     (t) => t.topicIndex < activeTopic.topicIndex && t.status === "CLOSED",
   );
+  
   const streamable = createStreamableValue("");
 
   // Determine if this is an opening question or a follow-up
-  const isOpening = activeTopic.turns.length === 0;
+  const isOpening = activeTopic.turns.length === 0;  
 
   // Start the AI stream in the background
   (async () => {
@@ -269,7 +270,14 @@ export async function streamAiTurnAction(
         const nextTopic = interview.topics.find(
           (t) => t.topicIndex === activeTopic.topicIndex + 1,
         );
+
+
         if (nextTopic) {
+
+          // Wait 5 seconds before activating the next topic so the candidate has time to read the AI's final response
+          await new Promise(resolve => setTimeout(resolve, 5000))
+
+          
           await prisma.interviewTopic.update({
             where: { id: nextTopic.id },
             data: {
