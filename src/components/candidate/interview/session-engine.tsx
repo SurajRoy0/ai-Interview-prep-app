@@ -154,6 +154,11 @@ export function SessionEngine({ interviewId }: SessionEngineProps) {
     )
   }
 
+// Calculate elapsed seconds for timer
+    const elapsedSeconds = activeTopic?.startedAt  ? Math.floor( (Date.now() - new Date(activeTopic.startedAt).getTime()) / 1000 ) : 0
+
+
+
   return (
     <div className="flex-1 flex flex-col h-[calc(100vh-140px)] w-full max-w-4xl mx-auto bg-surface-1 border rounded-2xl overflow-hidden shadow-sm">
       {/* Header */}
@@ -164,7 +169,7 @@ export function SessionEngine({ interviewId }: SessionEngineProps) {
         </div>
         <SessionTimer 
           timeLimitSeconds={activeTopic.timeLimitSeconds || 120} 
-          elapsedSeconds={activeTopic.timeUsedSeconds || 0} 
+          elapsedSeconds={elapsedSeconds || 0} 
           isActive={!isStreaming && !isSubmitting} 
           onExpire={handleTimerExpire} 
         />
