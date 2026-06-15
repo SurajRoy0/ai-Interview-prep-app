@@ -59,7 +59,7 @@ export function buildPlanGeneratorSystemPrompt(
     const configEntries = Object.entries(options.activityConfig).filter(([_, count]) => count > 0)
     if (configEntries.length > 0) {
       const requirements = configEntries.map(([type, count]) => `exactly ${count} topic(s) with activityType "${type}"`).join(', ')
-      activityInstruction = `\nACTIVITY REQUIREMENT: You MUST generate ${requirements}. For these specific topics, you must set "category": "ACTIVITY", set "activityType" to the required value, and explicitly set "intent" to "CHALLENGE".`
+      activityInstruction = `\nACTIVITY REQUIREMENT: You MUST generate ${requirements}. For these specific topics, you must set "category": "ACTIVITY", and you MUST INCLUDE the "activityType" field set to the exact required value. Do not omit the "activityType" field. Explicitly set "intent" to "CHALLENGE".`
     }
   }
 

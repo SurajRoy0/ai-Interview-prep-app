@@ -283,32 +283,22 @@ export async function streamAiTurnAction(
           },
         });
 
-        // Find next topic and activate it
+        console.log(`[streamAiTurnAction] Topic ${activeTopic.id} closed. Enqueuing judge worker...`);
+        // Enqueue Judge worker for the closed topic IMMEDIATELY before any 5 second waits
+        await judgeQueue.add("judge-topic", {
+          interviewId,
+          topicId: activeTopic.id,
+        });
+        console.log(`[streamAiTurnAction] Judge worker enqueued successfully for topic ${activeTopic.id}.`);
+
+        // Check if there is a next topic to determine if interview is COMPLETED
         const nextTopic = interview.topics.find(
           (t) => t.topicIndex === activeTopic.topicIndex + 1,
         );
 
-
-        if (nextTopic) {
-
-          // Wait 5 seconds before activating the next topic so the candidate has time to read the AI's final response
-          await new Promise(resolve => setTimeout(resolve, 5000))
-
-          
-          await prisma.interviewTopic.update({
-            where: { id: nextTopic.id },
-            data: {
-              status: "ACTIVE",
-              startedAt: new Date(),
-            },
-          });
-
-          await prisma.interview.update({
-            where: { id: interviewId },
-            data: { currentTopicIndex: nextTopic.topicIndex },
-          });
-        } else {
+        if (!nextTopic) {
           // Interview completed
+          console.log(`[streamAiTurnAction] No more topics. Completing interview ${interviewId}.`);
           await prisma.interview.update({
             where: { id: interviewId },
             data: {
@@ -316,13 +306,9 @@ export async function streamAiTurnAction(
               completedAt: new Date(),
             },
           });
+        } else {
+          console.log(`[streamAiTurnAction] Topic closed. Waiting for candidate to manually start next topic ${nextTopic.id}.`);
         }
-
-        // TODO: Enqueue Judge worker for the closed topic
-        await judgeQueue.add("judge-topic", {
-          interviewId,
-          topicId: activeTopic.id,
-        });
       }
 
       console.log(
@@ -349,4 +335,61 @@ export async function streamAiTurnAction(
   })();
 
   return { stream: streamable.value };
+}
+
+// 3. Start the Next Topic
+export async function startNextTopicAction(
+  interviewId: string,
+): Promise<ActionResult<{ interview: unknown }>> {
+  try {
+    const session = await getSession();
+    if (!session) return failure("Unauthorized", "UNAUTHORIZED");
+
+    const interview = await prisma.interview.findUnique({
+      where: { id: interviewId, userId: session.user.id },
+      include: {
+        topics: {
+          orderBy: { topicIndex: "asc" },
+          include: { turns: { orderBy: { turnIndex: "asc" } } },
+        },
+      },
+    });
+
+    if (!interview) return failure("Interview not found", "NOT_FOUND");
+    if (interview.status === "COMPLETED" || interview.status === "FAILED") {
+      return failure("Interview already ended", "BAD_REQUEST");
+    }
+
+    const nextTopic = interview.topics.find((t) => t.status === "PENDING");
+    if (!nextTopic) return failure("No pending topics found", "NOT_FOUND");
+
+    await prisma.$transaction([
+      prisma.interviewTopic.update({
+        where: { id: nextTopic.id },
+        data: {
+          status: "ACTIVE",
+          startedAt: new Date(),
+        },
+      }),
+      prisma.interview.update({
+        where: { id: interviewId },
+        data: { currentTopicIndex: nextTopic.topicIndex },
+      }),
+    ]);
+
+    const updatedInterview = await prisma.interview.findUnique({
+      where: { id: interviewId },
+      include: {
+        topics: {
+          orderBy: { topicIndex: "asc" },
+          include: { turns: { orderBy: { turnIndex: "asc" } } },
+        },
+      },
+    });
+
+    return success({ interview: updatedInterview });
+  } catch (error: unknown) {
+    console.error("[startNextTopicAction]", error);
+    return failure("Failed to start next topic", "INTERNAL_ERROR");
+  }
 }

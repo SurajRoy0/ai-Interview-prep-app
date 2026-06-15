@@ -30,7 +30,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
-import { initializeSessionAction, streamAiTurnAction } from '@/actions/candidate/session'
+import { initializeSessionAction, streamAiTurnAction, startNextTopicAction } from '@/actions/candidate/session'
 import { cn } from '@/lib/utils'
 import type { InterviewTopic, TopicTurn } from '@repo/db'
 import { UserAvatar } from '@/components/shared/user-avatar'
@@ -70,6 +70,7 @@ function InterviewerAvatar({ className, pulsing }: { className?: string; pulsing
 
 type InterviewState = {
   totalTopics: number
+  status: string
   pauseCount?: number
   maxPauseCount?: number
   topics: (InterviewTopic & { turns: TopicTurn[] })[]
@@ -208,12 +209,6 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
     // TODO: Implement end interview logic
   }
 
-  const handleNextTopic = () => {
-    // TODO: Implement next topic logic
-  }
-  const handleSkipTopic = () => {
-    // TODO: Implement skip topic logic
-  }
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
@@ -226,24 +221,25 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
   if (!interview) return null
 
   const activeTopic = interview.topics.find((t: InterviewTopic) => t.status === 'ACTIVE')
+  const displayTopic = activeTopic || [...interview.topics].reverse().find((t: InterviewTopic) => t.status === 'CLOSED')
 
   console.log('interview.topics', interview)
 
-  // If no active topic, maybe interview completed or errored
-  if (!activeTopic) {
+  // If no display topic, maybe interview completed or errored
+  if (!displayTopic) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-surface-1 rounded-2xl border">
         <h2 className="text-xl font-bold mb-2">Session Ended</h2>
-        <p className="text-muted-foreground mb-6">There are no active questions. The interview has concluded.</p>
+        <p className="text-muted-foreground mb-6">There are no questions. The interview has concluded.</p>
         <Button onClick={() => router.push(`/candidate/interview/${interviewId}`)}>View Report</Button>
       </div>
     )
   }
 
   // Calculate elapsed seconds for timer
-  const elapsedSeconds = activeTopic?.startedAt ? Math.floor((Date.now() - new Date(activeTopic.startedAt).getTime()) / 1000) : 0
+  const elapsedSeconds = displayTopic?.startedAt ? Math.floor((Date.now() - new Date(displayTopic.startedAt).getTime()) / 1000) : 0
 
-  const categoryKey = activeTopic.plannedCategory ?? ''
+  const categoryKey = displayTopic.plannedCategory ?? ''
   const CategoryIcon = CATEGORY_ICONS[categoryKey]?.icon ?? Briefcase
   const categoryIconClass = CATEGORY_ICONS[categoryKey]?.className ?? 'text-primary'
 
@@ -261,12 +257,12 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
             <CategoryIcon className={cn('h-5 w-5', categoryIconClass)} />
           </div>
           <div className="">
-            <h2 className="font-semibold text-md">TOPIC {activeTopic.topicIndex + 1} OF {interview.totalTopics}</h2>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-light">{activeTopic.plannedCategory}</p>
+            <h2 className="font-semibold text-md">TOPIC {displayTopic.topicIndex + 1} OF {interview.totalTopics}</h2>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-light">{displayTopic.plannedCategory}</p>
           </div>
         </div>
         <SessionTimer
-          timeLimitSeconds={activeTopic.timeLimitSeconds || 120}
+          timeLimitSeconds={displayTopic.timeLimitSeconds || 120}
           elapsedSeconds={elapsedSeconds || 0}
           isActive={!sessionBusy && !isPaused}
           onExpire={handleTimerExpire}
@@ -291,14 +287,6 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
             <SkipForward data-icon="inline-start" />
             End Interview
           </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleSkipTopic}
-            disabled={sessionBusy}
-          >
-            Editor
-          </Button>
         </div>
       </div>
 
@@ -308,7 +296,7 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
             <div className="flex h-full min-h-0 flex-col max-w-4xl mx-auto">
               {/* Transcript Area */}
               <div className="flex-1 min-h-0 overflow-y-auto space-y-6 p-7">
-                {activeTopic.turns.map((turn: TopicTurn, i: number) => (
+                {displayTopic.turns.map((turn: TopicTurn, i: number) => (
                   <div
                     key={i}
                     className={cn(
@@ -350,6 +338,40 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
 
               {/* Input Area */}
               <div className="shrink-0 p-4">
+                {!activeTopic ? (
+                  interview.status === 'COMPLETED' ? (
+                    <div className="flex flex-col items-center justify-center p-6 bg-surface-1 rounded-2xl border border-border/50">
+                      <h3 className="font-semibold mb-2">Interview Completed</h3>
+                      <p className="text-sm text-muted-foreground mb-4">You have successfully completed all topics.</p>
+                      <Button onClick={() => router.push(`/candidate/interview/${interviewId}`)}>View Report</Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-6 bg-surface-1 rounded-2xl border border-border/50">
+                      <h3 className="font-semibold mb-2">Topic Completed</h3>
+                      <p className="text-sm text-muted-foreground mb-4">Take a breath. Click below when you are ready to continue.</p>
+                      <Button 
+                        disabled={isSubmitting} 
+                        onClick={async () => {
+                          setIsSubmitting(true)
+                          try {
+                            const res = await startNextTopicAction(interviewId)
+                            if (res.success) {
+                              setInterview(res.data.interview as InterviewState)
+                              await initialize()
+                            } else {
+                              toast.error(res.error?.message || "Failed to start next topic")
+                            }
+                          } finally {
+                            setIsSubmitting(false)
+                          }
+                        }}
+                      >
+                        {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Start Next Topic
+                      </Button>
+                    </div>
+                  )
+                ) : (
                 <form
                   onSubmit={handleSubmit}
                   className={cn(
@@ -403,6 +425,7 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
                     </div>
                   </div>
                 </form>
+                )}
               </div>
             </div>
           </ResizablePanel>
