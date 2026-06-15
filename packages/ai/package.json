@@ -11,7 +11,6 @@
     "@ai-sdk/anthropic": "^3.0.79",
     "@ai-sdk/google": "^2.0.74",
     "@ai-sdk/openai": "^2.0.106",
-    "@openrouter/ai-sdk-provider": "1.5.4",
     "@repo/shared": "workspace:*",
     "ai": "^5.0.192",
     "zod": "^3.25.28"

@@ -31,27 +31,28 @@ export async function createInterviewAction(
       if (!jobProfile) return failure('Job profile not found', 'NOT_FOUND')
       if (!jobProfile.activeResume) return failure('You must activate a resume before starting an interview.', 'BAD_REQUEST')
 
-      const creditsResult = await tx.credit.aggregate({
-        where: {
-          userId,
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-        },
-        _sum: { amount: true },
-      })
-      const balance = creditsResult._sum.amount || 0
+      // We will handle Later
+      // const creditsResult = await tx.credit.aggregate({
+      //   where: {
+      //     userId,
+      //     OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      //   },
+      //   _sum: { amount: true },
+      // })
+      // const balance = creditsResult._sum.amount || 0
 
-      if (balance < 1) {
-        return failure('You have no interview credits remaining. Please upgrade your plan or purchase more credits.', 'INSUFFICIENT_CREDITS')
-      }
+      // if (balance < 1) {
+      //   return failure('You have no interview credits remaining. Please upgrade your plan or purchase more credits.', 'INSUFFICIENT_CREDITS')
+      // }
 
-      // Consume 1 credit
-      await tx.credit.create({
-        data: {
-          userId,
-          amount: -1,
-          reason: 'consumed'
-        }
-      })
+      // // Consume 1 credit
+      // await tx.credit.create({
+      //   data: {
+      //     userId,
+      //     amount: -1,
+      //     reason: 'consumed'
+      //   }
+      // })
 
       const planConfig = await getUserActivePlanConfig(userId)
 

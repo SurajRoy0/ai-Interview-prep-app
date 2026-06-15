@@ -23,16 +23,12 @@ export async function evaluateTopicWithAI(
 
   const { object } = await generateObject({
     model,
-
     schema: judgeResultSchema,
-
     system: buildJudgeSystemPrompt(topic, transcript),
-
     prompt: JSON.stringify({
       topic,
       transcript,
     }),
-
     temperature: 0.2,
   });
 

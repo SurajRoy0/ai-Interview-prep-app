@@ -1,15 +1,16 @@
 import { SessionEngine } from '@/components/candidate/interview/session-engine'
+import { requireSession } from '@/lib/auth-server'
 
 export default async function InterviewSessionPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const [{ id }, session] = await Promise.all([params, requireSession()])
 
   return (
-    <div className="flex-1 flex flex-col p-6 w-full h-[calc(100vh-64px)] overflow-hidden">
-      <SessionEngine interviewId={id} />
+    <div className="flex flex-1 flex-col min-h-0 w-full overflow-hidden">
+      <SessionEngine interviewId={id} session={session} />
     </div>
   )
 }

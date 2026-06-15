@@ -19,6 +19,8 @@ export interface UserAvatarProps {
   image?: string | null
   className?: string
   avatarClassName?: string
+  compact?: boolean
+  size?: "sm" | "default" | "lg"
 }
 
 export function UserAvatar({
@@ -27,16 +29,26 @@ export function UserAvatar({
   image,
   className,
   avatarClassName,
+  compact = false,
+  size = "lg",
 }: UserAvatarProps) {
   const initials = getInitials(name)
   const displayName = name?.trim() || email
 
+  const avatar = (
+    <Avatar size={size} className={cn("shrink-0", avatarClassName)}>
+      {image ? <AvatarImage src={image} alt={displayName} /> : null}
+      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+    </Avatar>
+  )
+
+  if (compact) {
+    return avatar
+  }
+
   return (
     <div className={cn("flex items-center gap-3 min-w-0", className)}>
-      <Avatar size="lg" className={cn("shrink-0", avatarClassName)}>
-        {image ? <AvatarImage src={image} alt={displayName} /> : null}
-        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-      </Avatar>
+      {avatar}
       <div className="max-md:hidden min-w-0 text-start">
         <p className="truncate text-sm font-medium leading-none">{displayName}</p>
         <p className="truncate text-xs text-muted-foreground mt-1">{email}</p>

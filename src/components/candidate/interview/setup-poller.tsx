@@ -28,7 +28,7 @@ export function SetupPoller({ interviewId, initialPlanStatus, initialPlanGenerat
   const [isGenerated, setIsGenerated] = React.useState(initialPlanGenerated)
   const [retryLoading, setRetryLoading] = React.useState(false)
   const [messageIndex, setMessageIndex] = React.useState(0)
-  
+
   // Basic mock mic check state
   const [micChecked, setMicChecked] = React.useState(false)
 
@@ -105,7 +105,7 @@ export function SetupPoller({ interviewId, initialPlanStatus, initialPlanGenerat
             </div>
             <div className="flex-1 space-y-2">
               <h3 className="font-semibold text-lg">AI Interview Plan</h3>
-              
+
               {!isGenerated && status !== 'FAILED' && (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground animate-pulse">
@@ -164,18 +164,14 @@ export function SetupPoller({ interviewId, initialPlanStatus, initialPlanGenerat
       </div>
 
       <div className="pt-6 border-t border-border/40">
-        <Button 
-          size="lg" 
+        <Button
+          size="lg"
           className="w-full h-14 text-lg rounded-xl font-bold"
           disabled={!isGenerated || !micChecked}
           onClick={handleStart}
         >
           {(!isGenerated || !micChecked) ? 'Waiting for setup...' : 'Begin Interview Session'}
         </Button>
-        <p className="text-center text-xs text-muted-foreground mt-3 font-medium flex items-center justify-center gap-1.5">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-          Note: 1 Interview Credit will be deducted when the session begins.
-        </p>
       </div>
     </div>
   )

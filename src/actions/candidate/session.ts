@@ -119,16 +119,24 @@ export async function streamAiTurnAction(
     const nextTurnIndex = activeTopic.turns.length;
     const isFollowUp = nextTurnIndex > 1; // AI asked opening (0), user answered (1), AI followed up (2), user answered (3)
 
-    await prisma.topicTurn.create({
-      data: {
-        topicId: activeTopic.id,
-        interviewId,
-        turnIndex: nextTurnIndex,
-        role: "USER",
-        turnType: isFollowUp ? "FOLLOWUP_ANSWER" : "ANSWER",
-        content: candidateResponse,
-      },
-    });
+    try {
+      await prisma.topicTurn.create({
+        data: {
+          topicId: activeTopic.id,
+          interviewId,
+          turnIndex: nextTurnIndex,
+          role: "USER",
+          turnType: isFollowUp ? "FOLLOWUP_ANSWER" : "ANSWER",
+          content: candidateResponse,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        console.warn(`[streamAiTurnAction] Duplicate USER turn ignored for topic ${activeTopic.id} at index ${nextTurnIndex}`);
+        return { stream: createStreamableValue("").value };
+      }
+      throw error;
+    }
     // Re-fetch to include the new turn
     activeTopic.turns.push({
       id: "temp",
@@ -242,17 +250,26 @@ export async function streamAiTurnAction(
 
       // Save the AI turn to the database
       const nextTurnIndex = activeTopic.turns.length;
-      await prisma.topicTurn.create({
-        data: {
-          topicId: activeTopic.id,
-          interviewId,
-          turnIndex: nextTurnIndex,
-          role: "AI",
-          turnType,
-          content: fullText,
-          moveToNext,
-        },
-      });
+      try {
+        await prisma.topicTurn.create({
+          data: {
+            topicId: activeTopic.id,
+            interviewId,
+            turnIndex: nextTurnIndex,
+            role: "AI",
+            turnType,
+            content: fullText,
+            moveToNext,
+          },
+        });
+      } catch (insertError: any) {
+        if (insertError.code === 'P2002') {
+          console.warn(`[streamAiTurnAction] Duplicate AI turn ignored for topic ${activeTopic.id} at index ${nextTurnIndex}`);
+          streamable.done();
+          return;
+        }
+        throw insertError;
+      }
 
       // If the AI decided to close the topic
       if (moveToNext) {

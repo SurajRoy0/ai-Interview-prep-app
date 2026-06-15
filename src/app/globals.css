@@ -134,8 +134,8 @@
 
   /* Score colors */
   --score-high: oklch(0.70 0.18 145);
-  --score-mid:  oklch(0.76 0.16 65);
-  --score-low:  oklch(0.65 0.22 25);
+  --score-mid: oklch(0.76 0.16 65);
+  --score-low: oklch(0.65 0.22 25);
 
   /* Charts */
   --chart-1: oklch(0.65 0.26 275);
@@ -234,7 +234,12 @@
     background-color: oklch(from var(--primary) l c h / 0.25);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply tracking-tight;
   }
 }
@@ -261,12 +266,10 @@
 
 /* Gradient text using primary → violet family */
 .text-gradient {
-  background: linear-gradient(
-    135deg,
-    oklch(0.64 0.26 275) 0%,
-    oklch(0.72 0.20 300) 50%,
-    oklch(0.68 0.22 260) 100%
-  );
+  background: linear-gradient(135deg,
+      oklch(0.64 0.26 275) 0%,
+      oklch(0.72 0.20 300) 50%,
+      oklch(0.68 0.22 260) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -276,6 +279,23 @@
 /* Primary glow box-shadow */
 .shadow-primary-glow {
   box-shadow: var(--primary-glow);
+}
+
+@keyframes primary-aura-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  75%,
+  100% {
+    transform: scale(2.25);
+    opacity: 0;
+  }
+}
+
+.animate-primary-aura {
+  animation: primary-aura-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
 /* Subtle noise texture for hero sections */
@@ -290,9 +310,17 @@
 
 /* Animated gradient border */
 @keyframes gradient-rotate {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .border-gradient-animated {
@@ -308,9 +336,26 @@
 }
 
 /* Score color utilities */
-.text-score-high { color: var(--score-high); }
-.text-score-mid  { color: var(--score-mid); }
-.text-score-low  { color: var(--score-low); }
-.bg-score-high   { background-color: oklch(from var(--score-high) l c h / 0.15); }
-.bg-score-mid    { background-color: oklch(from var(--score-mid) l c h / 0.15); }
-.bg-score-low    { background-color: oklch(from var(--score-low) l c h / 0.15); }
+.text-score-high {
+  color: var(--score-high);
+}
+
+.text-score-mid {
+  color: var(--score-mid);
+}
+
+.text-score-low {
+  color: var(--score-low);
+}
+
+.bg-score-high {
+  background-color: oklch(from var(--score-high) l c h / 0.15);
+}
+
+.bg-score-mid {
+  background-color: oklch(from var(--score-mid) l c h / 0.15);
+}
+
+.bg-score-low {
+  background-color: oklch(from var(--score-low) l c h / 0.15);
+}

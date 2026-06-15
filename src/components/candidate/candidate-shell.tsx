@@ -73,7 +73,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
       : pathname.startsWith(href)
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className={cn("flex flex-col bg-background text-foreground", isInterviewSession ? "h-screen min-h-0" : "min-h-screen")}>
       {/* Ambient top glow */}
       <div className="fixed top-0 inset-x-0 h-72 bg-linear-to-b from-primary/6 to-transparent pointer-events-none z-0" />
 
@@ -222,7 +222,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
       )}
 
       {/* ── Main content ────────────────────────────────────────────────────── */}
-      <main className={cn("relative z-10 flex-1 w-full", isInterviewSession ? "p-0 flex flex-col" : "max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-10")}>
+      <main className={cn("relative z-10 flex-1 w-full min-h-0", isInterviewSession ? "flex flex-col p-0" : "max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-10")}>
         {children}
       </main>
 

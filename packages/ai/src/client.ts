@@ -49,9 +49,10 @@
 
 //set up open router client
 
-import { createOpenRouter } from '@openrouter/ai-sdk-provider'
+import { createOpenAI } from '@ai-sdk/openai'
 
-const openrouter = createOpenRouter({
+const openrouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY,
 })
 
@@ -73,23 +74,23 @@ export const AI_MODELS = {
 } as const
 
 export function getModel(modelName: string) {
-  return openrouter.chat(modelName)
+  return openrouter(modelName)
 }
 
 export function getGeminiModel(
   modelName: string = AI_MODELS.GEMINI.FLASH,
 ) {
-  return openrouter.chat(modelName)
+  return openrouter(modelName)
 }
 
 export function getOpenAiModel(
   modelName: string = AI_MODELS.OPENAI.MINI,
 ) {
-  return openrouter.chat(modelName)
+  return openrouter(modelName)
 }
 
 export function getClaudeModel(
   modelName: string = AI_MODELS.ANTHROPIC.SONNET,
 ) {
-  return openrouter.chat(modelName)
+  return openrouter(modelName)
 }
