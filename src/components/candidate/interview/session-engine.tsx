@@ -24,7 +24,11 @@ import {
 import { readStreamableValue } from '@ai-sdk/rsc'
 import { toast } from 'sonner'
 import { SessionTimer } from './session-timer'
-import { SessionCodeEditor } from './session-code-editor'
+import Editor from 'react-simple-code-editor'
+import Prism from 'prismjs'
+import 'prismjs/components/prism-javascript'
+import 'prismjs/components/prism-typescript'
+import 'prismjs/themes/prism-tomorrow.css'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -97,6 +101,17 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
   const [streamingText, setStreamingText] = React.useState('')
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [isPaused, setIsPaused] = React.useState(false)
+  const [code, setCode] = React.useState('')
+
+  const activeTopic = interview?.topics.find((t: InterviewTopic) => t.status === 'ACTIVE')
+  const lastClosedTopic = interview?.topics.length ? [...interview.topics].reverse().find((t: InterviewTopic) => t.status === 'CLOSED') : undefined
+  const displayTopic = activeTopic || lastClosedTopic
+
+  React.useEffect(() => {
+    if (displayTopic?.type === 'ACTIVITY' && displayTopic.codeSnippet) {
+      setCode(displayTopic.codeSnippet)
+    }
+  }, [displayTopic?.id, displayTopic?.type, displayTopic?.codeSnippet])
 
   const chatEndRef = React.useRef<HTMLDivElement>(null)
 
@@ -162,10 +177,13 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
         }
       }
 
-      const { stream } = await streamAiTurnAction(interviewId, userText)
+      const codeSubmission = displayTopic?.type === 'ACTIVITY' ? code : undefined
+      const res = await streamAiTurnAction(interviewId, userText, codeSubmission)
+      if (!res.success) throw new Error(res.error?.message || "Failed to start AI turn")
+      const { stream } = res.data
 
       for await (const chunk of readStreamableValue(stream)) {
-        if (chunk) setStreamingText(chunk)
+        if (chunk) setStreamingText(chunk as string)
       }
 
       // When stream finishes, we need to re-fetch the true state from DB 
@@ -220,8 +238,7 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
 
   if (!interview) return null
 
-  const activeTopic = interview.topics.find((t: InterviewTopic) => t.status === 'ACTIVE')
-  const displayTopic = activeTopic || [...interview.topics].reverse().find((t: InterviewTopic) => t.status === 'CLOSED')
+
 
   console.log('interview.topics', interview)
 
@@ -290,13 +307,13 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col min-h-0 bg-surface-1">
+      <div className="flex min-h-0 flex-1 flex-col relative bg-background/50 backdrop-blur-sm">
         <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
-          <ResizablePanel defaultSize="55%" minSize="30%" className="h-full">
-            <div className="flex h-full min-h-0 flex-col max-w-4xl mx-auto">
-              {/* Transcript Area */}
-              <div className="flex-1 min-h-0 overflow-y-auto space-y-6 p-7">
-                {displayTopic.turns.map((turn: TopicTurn, i: number) => (
+          <ResizablePanel defaultSize={displayTopic.type === 'ACTIVITY' ? 40 : 100} minSize={30} className="h-full">
+            <div className="flex h-full min-h-0 flex-col max-w-4xl mx-auto border-r border-border/50">
+              <div className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth" id="transcript-container">
+                <div className="mx-auto flex max-w-3xl flex-col gap-6">
+                  {displayTopic.turns.filter((turn: TopicTurn) => turn.turnType !== 'CODE_SUBMISSION').map((turn: TopicTurn, i: number) => (
                   <div
                     key={i}
                     className={cn(
@@ -334,9 +351,9 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
                   </div>
                 )}
                 <div ref={chatEndRef} className="h-4" />
+                </div>
               </div>
 
-              {/* Input Area */}
               <div className="shrink-0 p-4">
                 {!activeTopic ? (
                   interview.status === 'COMPLETED' ? (
@@ -430,11 +447,35 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
             </div>
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
-
-          <ResizablePanel defaultSize="45%" minSize="25%" className="h-full">
-            <SessionCodeEditor />
-          </ResizablePanel>
+          {displayTopic.type === 'ACTIVITY' && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={60} minSize={30} className="h-full bg-[#1d1f21] overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between px-4 py-2 bg-[#1d1f21] border-b border-white/10 text-white/70 text-xs uppercase tracking-widest font-semibold">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="size-3.5" />
+                    <span>Code Editor</span>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto bg-[#1d1f21]">
+                  <Editor
+                    value={code}
+                    onValueChange={setCode}
+                    highlight={c => Prism.highlight(c, Prism.languages.typescript, 'typescript')}
+                    padding={16}
+                    style={{
+                      fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                      fontSize: 14,
+                      minHeight: '100%',
+                      backgroundColor: '#1d1f21',
+                      color: '#f8f8f2'
+                    }}
+                    textareaClassName="focus:outline-none"
+                  />
+                </div>
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
     </div>

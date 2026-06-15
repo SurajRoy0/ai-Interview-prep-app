@@ -3,8 +3,9 @@
 import { prisma } from "@repo/db";
 import { getSession } from "@/lib/auth-server";
 import { ActionResult, success, failure } from "@/lib/action-result";
-import { generateOpeningQuestion, generateFollowUp } from "@repo/ai";
+import { generateOpeningQuestion, generateFollowUp, generateActivitySnippet } from "@repo/ai";
 import { createStreamableValue } from "@ai-sdk/rsc";
+import type { StreamableValue } from "@ai-sdk/rsc";
 import type { TopicTurn, TurnType, TopicCloseReason } from "@repo/db";
 import { judgeQueue } from "@/lib/queues";
 
@@ -90,7 +91,8 @@ export async function initializeSessionAction(
 export async function streamAiTurnAction(
   interviewId: string,
   candidateResponse?: string,
-) {
+  codeSubmission?: string,
+): Promise<ActionResult<{ stream: StreamableValue<string> }>> {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
 
@@ -115,11 +117,11 @@ export async function streamAiTurnAction(
   }
 
   // If candidate submitted an answer, save it first (even if it's an empty string from the timer)
-  if (candidateResponse !== undefined) {
-    const nextTurnIndex = activeTopic.turns.length;
-    const isFollowUp = nextTurnIndex > 1; // AI asked opening (0), user answered (1), AI followed up (2), user answered (3)
+  try {
+    let nextTurnIndex = activeTopic.turns.length;
 
-    try {
+    if (candidateResponse !== undefined) {
+      const isFollowUp = activeTopic.turns.length > 0;
       await prisma.topicTurn.create({
         data: {
           topicId: activeTopic.id,
@@ -130,22 +132,59 @@ export async function streamAiTurnAction(
           content: candidateResponse,
         },
       });
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        console.warn(`[streamAiTurnAction] Duplicate USER turn ignored for topic ${activeTopic.id} at index ${nextTurnIndex}`);
-        return { stream: createStreamableValue("").value };
-      }
-      throw error;
+      nextTurnIndex++;
     }
-    // Re-fetch to include the new turn
+
+    if (codeSubmission !== undefined) {
+      await prisma.topicTurn.create({
+        data: {
+          topicId: activeTopic.id,
+          interviewId,
+          turnIndex: nextTurnIndex,
+          role: "USER",
+          turnType: "CODE_SUBMISSION",
+          content: codeSubmission,
+        },
+      });
+      nextTurnIndex++;
+    }
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: string }).code === 'P2002') {
+      console.warn(`[streamAiTurnAction] Duplicate USER turn ignored for topic ${activeTopic.id}`);
+      return success({ stream: createStreamableValue("").value });
+    }
+    throw error;
+  }
+
+  if (candidateResponse !== undefined) {
+    const isFollowUp = activeTopic.turns.length > 0;
     activeTopic.turns.push({
       id: "temp",
       topicId: activeTopic.id,
       interviewId,
-      turnIndex: nextTurnIndex,
+      turnIndex: activeTopic.turns.length,
       role: "USER",
       turnType: isFollowUp ? "FOLLOWUP_ANSWER" : "ANSWER",
       content: candidateResponse,
+      moveToNext: false,
+      suggestedInputMode: null,
+      latencyMs: null,
+      streamingLatencyMs: null,
+      timeUsedSeconds: null,
+      tokenUsage: null,
+      createdAt: new Date(),
+    } as unknown as TopicTurn);
+  }
+
+  if (codeSubmission !== undefined) {
+    activeTopic.turns.push({
+      id: "temp_code",
+      topicId: activeTopic.id,
+      interviewId,
+      turnIndex: activeTopic.turns.length,
+      role: "USER",
+      turnType: "CODE_SUBMISSION",
+      content: `[CANDIDATE CODE SUBMISSION]:\n\`\`\`\n${codeSubmission}\n\`\`\``,
       moveToNext: false,
       suggestedInputMode: null,
       latencyMs: null,
@@ -262,8 +301,8 @@ export async function streamAiTurnAction(
             moveToNext,
           },
         });
-      } catch (insertError: any) {
-        if (insertError.code === 'P2002') {
+      } catch (insertError: unknown) {
+        if (typeof insertError === 'object' && insertError !== null && 'code' in insertError && (insertError as { code: string }).code === 'P2002') {
           console.warn(`[streamAiTurnAction] Duplicate AI turn ignored for topic ${activeTopic.id} at index ${nextTurnIndex}`);
           streamable.done();
           return;
@@ -334,7 +373,7 @@ export async function streamAiTurnAction(
     }
   })();
 
-  return { stream: streamable.value };
+  return success({ stream: streamable.value });
 }
 
 // 3. Start the Next Topic
@@ -348,6 +387,7 @@ export async function startNextTopicAction(
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId, userId: session.user.id },
       include: {
+        jobProfile: true,
         topics: {
           orderBy: { topicIndex: "asc" },
           include: { turns: { orderBy: { turnIndex: "asc" } } },
@@ -363,12 +403,33 @@ export async function startNextTopicAction(
     const nextTopic = interview.topics.find((t) => t.status === "PENDING");
     if (!nextTopic) return failure("No pending topics found", "NOT_FOUND");
 
+    let updatedCodeSnippet = nextTopic.codeSnippet;
+    let updatedExpectedAnswer = nextTopic.expectedAnswer;
+
+    if (nextTopic.type === "ACTIVITY" && !nextTopic.codeSnippet && nextTopic.activityType) {
+      try {
+        const { jobProfile } = interview;
+        const result = await generateActivitySnippet(
+          nextTopic.activityType,
+          nextTopic.targetSkills,
+          nextTopic.plannedDifficulty || "MEDIUM",
+          jobProfile.ecosystem || "JAVASCRIPT"
+        );
+        updatedCodeSnippet = result.codeSnippet;
+        updatedExpectedAnswer = result.expectedAnswer;
+      } catch (err) {
+        console.error("Failed to generate activity snippet", err);
+      }
+    }
+
     await prisma.$transaction([
       prisma.interviewTopic.update({
         where: { id: nextTopic.id },
         data: {
           status: "ACTIVE",
           startedAt: new Date(),
+          codeSnippet: updatedCodeSnippet,
+          expectedAnswer: updatedExpectedAnswer
         },
       }),
       prisma.interview.update({

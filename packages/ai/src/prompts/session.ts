@@ -52,7 +52,7 @@ You must generate the **very first question** for this current topic.
 1. Be professional, natural, and conversational. Do not sound robotic.
 2. Ask a question that aligns perfectly with the Current Topic Blueprint.
 3. If this is the very first topic of the interview, briefly welcome the candidate and jump into the first question.
-4. If there were previous topics, use the Context to ensure your tone is continuous and you don't repeat what was already asked.
+4. If there were previous topics, DO NOT greet the candidate again or welcome them back. Use a seamless transitional phrase (e.g., "Moving on to our next topic..." or "Let's shift focus to...") and dive straight into the question to ensure a continuous conversation.
 5. Your output should be the exact text that will be spoken/streamed to the candidate. Do not include any internal monologues, formatting like "Interviewer:", or metadata in your text.
 `
 }
@@ -90,6 +90,7 @@ The candidate just answered. You must evaluate their latest response and decide 
 ${maxFollowUpsReached ? 
 `CRITICAL: You have reached the maximum allowed follow-ups for this topic. You MUST conclude this topic and move to the next one.
 Acknowledge their answer briefly, provide a short bridging sentence, and signal transition.
+DO NOT ask any new questions. Your only job is to gracefully end this topic.
 YOU MUST INCLUDE THE EXACT STRING [NEXT_TOPIC] ANYWHERE IN YOUR RESPONSE.` 
 : 
 `You have the option to:
