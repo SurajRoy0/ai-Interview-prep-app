@@ -43,7 +43,10 @@ console.log(`[JudgeWorker] Processing job ${job.id} for interview ${interviewId}
       reasoning: topic.reasoning ?? "No reasoning provided",
       activityType: topic.activityType ?? null,
       targetSkills: topic.targetSkills ?? [],
-      plannedDifficulty: topic.plannedDifficulty ?? "UNKNOWN"
+      plannedDifficulty: topic.plannedDifficulty ?? "UNKNOWN",
+      type: topic.type,
+      codeSnippet: topic.codeSnippet,
+      expectedAnswer: topic.expectedAnswer,
     };
 
     const transcript: {

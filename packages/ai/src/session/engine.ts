@@ -41,6 +41,7 @@ export async function generateFollowUp(
   previousTopics: (InterviewTopic & { turns: TopicTurn[] })[],
   currentTopicTurns: TopicTurn[],
   maxFollowUpsReached: boolean,
+  isLastTopic: boolean = false,
 ) {
   const contextPrompt = buildContextPrompt(previousTopics)
 
@@ -50,6 +51,7 @@ export async function generateFollowUp(
     contextPrompt,
     currentTopicTurns,
     maxFollowUpsReached,
+    isLastTopic,
   )
 
   const result = streamText({

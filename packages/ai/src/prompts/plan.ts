@@ -15,7 +15,7 @@ import { type ParsedResume } from '@repo/shared'
  *   clarificationTimeSecs: 30,       // Extra time granted if User asks a clarifying question (Used in Live Session Action)
  *   allowedDifficultyModes: [...],   // Modes the user is allowed to pick in the UI (e.g. 'GRADUAL', 'INTENSIVE')
  *   questionGenMode: 'HYBRID',       // Tells the Session Engine to generate the exact question text live, not here
- *   reportDepth: 'STANDARD'          // How detailed the final PDF report should be (Used in Report Generator)
+
  * }
  * ============================================================================
  */

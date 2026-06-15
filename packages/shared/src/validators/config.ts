@@ -34,8 +34,7 @@ export const configSchema = z.object({
   maxSkillsPerCategory: z.coerce.number().min(0).max(50).default(10),
   maxExperienceYears: z.coerce.number().min(0).max(50).default(10),
 
-  reportDepth: z.enum(["MINIMAL", "STANDARD", "DETAILED", "EXHAUSTIVE"]).default("STANDARD"),
-  reportUnlockable: z.boolean().default(false),
+
 
   questionGenMode: z.enum(["HYBRID"]).default("HYBRID"),
 })

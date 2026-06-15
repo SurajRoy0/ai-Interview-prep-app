@@ -34,10 +34,11 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
-import { initializeSessionAction, streamAiTurnAction, startNextTopicAction } from '@/actions/candidate/session'
+import { initializeSessionAction, streamAiTurnAction, startNextTopicAction, endInterviewAction } from '@/actions/candidate/session'
 import { cn } from '@/lib/utils'
 import type { InterviewTopic, TopicTurn } from '@repo/db'
 import { UserAvatar } from '@/components/shared/user-avatar'
+import { ConfirmationDialog } from '@/components/shared/confirmation-dialog'
 import type { Session } from '@/lib/auth'
 
 interface SessionEngineProps {
@@ -74,6 +75,7 @@ function InterviewerAvatar({ className, pulsing }: { className?: string; pulsing
 
 type InterviewState = {
   totalTopics: number
+  currentTopicIndex: number
   status: string
   pauseCount?: number
   maxPauseCount?: number
@@ -98,6 +100,8 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
 
   const [inputText, setInputText] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [showEndConfirm, setShowEndConfirm] = React.useState(false)
+  const [isEnding, setIsEnding] = React.useState(false)
   const [streamingText, setStreamingText] = React.useState('')
   const [isStreaming, setIsStreaming] = React.useState(false)
   const [isPaused, setIsPaused] = React.useState(false)
@@ -223,8 +227,24 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
     setIsPaused((prev) => !prev)
   }
 
-  const handleEndInterview = () => {
-    // TODO: Implement end interview logic
+  const handleEndInterview = async () => {
+    try {
+      setIsSubmitting(true)
+      setIsEnding(true)
+      const res = await endInterviewAction(interviewId)
+      if (res.success) {
+        router.push(`/candidate/interview/${interviewId}`)
+      } else {
+        toast.error(res.error?.message || "Failed to end interview")
+      }
+    } catch (e) {
+      console.error(e)
+      toast.error("An error occurred")
+    } finally {
+      setIsSubmitting(false)
+      setIsEnding(false)
+      setShowEndConfirm(false)
+    }
   }
 
   if (loading) {
@@ -285,26 +305,28 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
           onExpire={handleTimerExpire}
         />
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handlePause}
-            disabled={sessionBusy || (!isPaused && pausesRemaining <= 0)}
-          >
-            {isPaused ? <Play data-icon="inline-start" /> : <Pause data-icon="inline-start" />}
-            {isPaused ? 'Resume' : 'Pause'}
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleEndInterview}
-            disabled={sessionBusy}
-          >
-            <SkipForward data-icon="inline-start" />
-            End Interview
-          </Button>
-        </div>
+        {interview.status !== 'COMPLETED' && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handlePause}
+              disabled={sessionBusy || (!isPaused && pausesRemaining <= 0)}
+            >
+              {isPaused ? <Play data-icon="inline-start" /> : <Pause data-icon="inline-start" />}
+              {isPaused ? 'Resume' : 'Pause'}
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setShowEndConfirm(true)}
+              disabled={sessionBusy}
+            >
+              <SkipForward data-icon="inline-start" />
+              End Interview
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col relative bg-background/50 backdrop-blur-sm">
@@ -356,11 +378,17 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
 
               <div className="shrink-0 p-4">
                 {!activeTopic ? (
-                  interview.status === 'COMPLETED' ? (
+                  interview.status === 'COMPLETED' || (interview.currentTopicIndex === interview.totalTopics - 1) ? (
                     <div className="flex flex-col items-center justify-center p-6 bg-surface-1 rounded-2xl border border-border/50">
                       <h3 className="font-semibold mb-2">Interview Completed</h3>
-                      <p className="text-sm text-muted-foreground mb-4">You have successfully completed all topics.</p>
-                      <Button onClick={() => router.push(`/candidate/interview/${interviewId}`)}>View Report</Button>
+                      <p className="text-sm text-muted-foreground mb-4">You have successfully completed all topics. Click below to view your results.</p>
+                      <Button 
+                        disabled={isSubmitting}
+                        onClick={handleEndInterview}
+                      >
+                        {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        View Results
+                      </Button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center p-6 bg-surface-1 rounded-2xl border border-border/50">
@@ -478,6 +506,18 @@ export function SessionEngine({ interviewId, session }: SessionEngineProps) {
           )}
         </ResizablePanelGroup>
       </div>
+
+      <ConfirmationDialog
+        open={showEndConfirm}
+        onOpenChange={setShowEndConfirm}
+        variant="confirm"
+        title="End Interview?"
+        description="Are you sure you want to end the interview early? Unattempted topics will be scored as zero. This action cannot be undone."
+        confirmLabel="End Interview"
+        onConfirm={handleEndInterview}
+        loading={isEnding}
+        destructive
+      />
     </div>
   )
 }

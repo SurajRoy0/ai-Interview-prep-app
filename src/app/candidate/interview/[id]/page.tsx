@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@repo/db'
 import { getSession } from '@/lib/auth-server'
+import { SummaryTabs } from '@/components/candidate/interview/summary-tabs'
 
 export default async function InterviewRouterPage({
   params,
@@ -16,7 +17,13 @@ export default async function InterviewRouterPage({
 
   const interview = await prisma.interview.findUnique({
     where: { id, userId: session.user.id },
-    select: { status: true },
+    include: {
+
+      topics: {
+        orderBy: { topicIndex: "asc" },
+        include: { turns: { orderBy: { turnIndex: "asc" } } },
+      },
+    },
   })
 
   if (!interview) {
@@ -33,18 +40,5 @@ export default async function InterviewRouterPage({
   }
 
   // 2. Post-Interview Dashboard (for COMPLETED or FAILED)
-  return (
-    <div className="p-8 max-w-4xl mx-auto w-full space-y-6">
-      <h1 className="text-2xl font-bold">Interview Report</h1>
-      <p className="text-muted-foreground font-mono bg-surface-1 p-4 rounded-xl border border-border/50">
-        Status: {interview.status}
-      </p>
-      
-      <div className="space-y-4 text-sm leading-relaxed">
-        <p className="text-muted-foreground">
-          Your interview is completed. The detailed report and transcript will be displayed here.
-        </p>
-      </div>
-    </div>
-  )
+  return <SummaryTabs interviewId={id} initialInterview={interview} />
 }

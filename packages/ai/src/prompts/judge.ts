@@ -22,6 +22,9 @@ type JudgeTopicInput = {
   activityType?: string | null
   targetSkills: string[]
   plannedDifficulty: string
+  type?: string
+  codeSnippet?: string | null
+  expectedAnswer?: string | null
 }
 
 type JudgeTurnInput = {
@@ -86,6 +89,20 @@ ${
     ? topic.targetSkills.map(skill => `- ${skill}`).join('\n')
     : '- None specified'
 }
+
+${topic.type === 'ACTIVITY' ? `
+==================================================
+ACTIVITY DETAILS
+==================================================
+
+Code Snippet Presented to Candidate:
+\`\`\`
+${topic.codeSnippet}
+\`\`\`
+
+Expected Answer / Solution:
+${topic.expectedAnswer}
+` : ''}
 
 ==================================================
 TOPIC TRANSCRIPT

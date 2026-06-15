@@ -13,6 +13,9 @@ export async function evaluateTopicWithAI(
     activityType?: string | null;
     targetSkills: string[];
     plannedDifficulty: string;
+    type?: string;
+    codeSnippet?: string | null;
+    expectedAnswer?: string | null;
   },
   transcript: {
     role: "AI" | "USER";

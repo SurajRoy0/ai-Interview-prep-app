@@ -67,12 +67,7 @@ enum QuestionGenMode {
   // Only mode supported for now — enum kept for future flexibility
 }
 
-enum ReportDepth {
-  MINIMAL // Overall score + 3-line summary (free tier)
-  STANDARD // Scores + topic analysis + suggestions
-  DETAILED // Everything + per-question breakdown + authenticity analysis
-  EXHAUSTIVE // Everything + raw judge data + full topic evidence
-}
+
 
 enum QuestionType {
   QA // Standard question-answer topic
@@ -257,14 +252,6 @@ model PlanConfig {
   maxSkillsPerCategory Int     @default(10) // ignored if parseFullResume = true
   maxExperienceYears   Int     @default(10) // how far back to read work history
 
-  // ── REPORT CONTROLS ───────────────────────────────────────
-  // reportDepth drives all report section gates:
-  //   MINIMAL    → scores + summary only
-  //   STANDARD   → + topic analysis + suggestions
-  //   DETAILED   → + per-question breakdown + authenticity analysis + activity report
-  //   EXHAUSTIVE → + raw judge data + full topic evidence
-  reportDepth      ReportDepth @default(STANDARD)
-  reportUnlockable Boolean     @default(false) // Upsell gate — teaser shown, full report costs 1 credit
 
   // ── QUESTION GENERATION MODE ──────────────────────────────
   questionGenMode QuestionGenMode @default(HYBRID)
@@ -613,8 +600,6 @@ model Interview {
   // Relations
   topics      InterviewTopic[]
   analytics   InterviewAnalytics?
-  report      InterviewReport?
-  suggestions ImprovementSuggestion[]
 
   @@index([userId])
   @@index([status])
@@ -751,109 +736,6 @@ model TopicTurn {
   @@index([interviewId, turnIndex])
 }
 
-// ======================================================
-// INTERVIEW REPORT
-// Why: The core user payoff. Generated async by BullMQ
-//      worker after interview completes.
-//      Report generator reads only judge summaries per
-//      topic — never raw turns. This keeps the prompt
-//      small and fast regardless of interview length.
-// ======================================================
-
-model InterviewReport {
-  id          String    @id @default(cuid())
-  interviewId String    @unique
-  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  userId      String
-
-  // ── HEADLINE SCORES ───────────────────────────────────────
-  overallScore       Int
-  communicationScore Int
-  technicalScore     Int
-  confidenceScore    Int
-  authenticityScore  Int? // null if no resume claims were testable
-
-  // ── NARRATIVE ────────────────────────────────────────────
-  performanceSummary String @db.Text // 2–3 sentence honest verdict
-  readinessLevel     String // 'not_ready' | 'needs_work' | 'almost_ready' | 'ready'
-  readinessSummary   String @db.Text // 1 sentence
-
-  // ── STRUCTURED DATA ───────────────────────────────────────
-  topStrengths String[] // max 3
-
-  // WeakTopic[] — topic, score, evidence, improvement
-  weakTopics Json
-
-  // TopicAnalysis[] — topic, score, trend note
-  topicAnalysis Json
-
-  // ActivitySummary[] — type, score, note
-  // Populated only when reportDepth >= DETAILED
-  activitySummary Json?
-
-  // CommunicationAnalysis struct
-  communicationAnalysis Json
-
-  // ConfidenceAnalysis struct
-  confidenceAnalysis Json
-
-  // AuthenticityAnalysis struct
-  // Populated only when reportDepth >= DETAILED
-  authenticityAnalysis Json?
-
-  // QuestionBreakdown[] — score, strengths, weaknesses per topic
-  // Populated only when reportDepth >= DETAILED
-  questionBreakdown Json?
-
-  // Depth used to generate this report — from planConfigSnapshot
-  reportDepth ReportDepth
-
-  generatedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  @@index([userId])
-  @@index([interviewId])
-}
-
-// ======================================================
-// IMPROVEMENT SUGGESTION
-// Why: Post-interview actionable guidance.
-//      V1 mechanic: a detailed prompt the candidate pastes
-//      into ChatGPT or Claude for a deep tutoring session
-//      on each weak topic. Keeps MVP lean while delivering
-//      real learning value without building an LMS.
-// ======================================================
-
-model ImprovementSuggestion {
-  id          String    @id @default(cuid())
-  interviewId String
-  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  userId      String
-
-  topic    String // 'async-js' | 'react-performance' etc.
-  priority ImprovementPriority // CRITICAL | HIGH | MEDIUM | LOW
-
-  title       String
-  description String @db.Text // why this matters for their target role
-
-  // Main V1 learning mechanic:
-  // Detailed prompt candidate pastes into ChatGPT or Claude
-  learningPrompt String? @db.Text
-
-  externalUrl String?
-
-  // Which topic indices triggered this suggestion
-  relatedTopicIds String[]
-
-  dismissed Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  @@index([interviewId])
-  @@index([userId])
-  @@index([topic])
-  @@index([priority])
-}
 
 // ======================================================
 // INTERVIEW ANALYTICS

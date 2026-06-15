@@ -79,8 +79,7 @@ async function seedPlans() {
       defaultTopicTimeLimitSecs: 480,
       maxPauseCount: 1,
       allowedDifficultyModes: ['GRADUAL'],
-      reportDepth: 'MINIMAL',
-      reportUnlockable: true,
+
       maxJobProfiles: 1,
       maxResumeUploadsPerDay: 1,
     }
@@ -100,8 +99,7 @@ async function seedPlans() {
       defaultTopicTimeLimitSecs: 600,
       maxPauseCount: 3,
       allowedDifficultyModes: ['GRADUAL', 'ADAPTIVE', 'INTENSIVE'],
-      reportDepth: 'EXHAUSTIVE',
-      reportUnlockable: false,
+
       maxJobProfiles: 10,
       maxResumeUploadsPerDay: 10,
       maxResumeUploadsPerJobProfile: 5,

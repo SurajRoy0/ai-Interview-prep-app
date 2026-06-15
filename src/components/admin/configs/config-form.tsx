@@ -58,8 +58,7 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
       maxProjectsToExtract: 3,
       maxSkillsPerCategory: 10,
       maxExperienceYears: 10,
-      reportDepth: "STANDARD",
-      reportUnlockable: false,
+
       questionGenMode: "HYBRID",
     }
 
@@ -385,46 +384,7 @@ export function ConfigForm({ initialData, configId }: ConfigFormProps) {
           </Card>
         </section>
 
-        {/* ── Report Generation ────────────────────────────────────────────── */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Report Generation</h2>
-          </div>
-          <Card className="border-border/60 shadow-sm">
-            <CardContent className="pt-6 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label>Report Depth</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    {...register("reportDepth")}
-                  >
-                    <option value="MINIMAL">Minimal</option>
-                    <option value="STANDARD">Standard</option>
-                    <option value="DETAILED">Detailed</option>
-                    <option value="EXHAUSTIVE">Exhaustive</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/50">
 
-                <div className="flex items-start gap-3 rounded-lg border p-4 bg-card/50">
-                  <input 
-                    type="checkbox" 
-                    id="reportUnlockable" 
-                    {...register("reportUnlockable")} 
-                    className="mt-0.5 h-5 w-5 cursor-pointer accent-primary"
-                  />
-                  <div className="space-y-1">
-                    <Label className="text-base cursor-pointer" htmlFor="reportUnlockable">Report Unlockable (Upsell)</Label>
-                    <p className="text-sm text-muted-foreground">Check to require payment for full report.</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
 
 
       </form>

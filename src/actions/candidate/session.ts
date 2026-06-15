@@ -30,9 +30,7 @@ export async function initializeSessionAction(
 
     if (!interview) return failure("Interview not found", "NOT_FOUND");
 
-    if (interview.status === "COMPLETED" || interview.status === "FAILED") {
-      return failure("Interview already ended", "BAD_REQUEST");
-    }
+
 
     // If it's pending, we activate it.
     if (interview.status === "PENDING") {
@@ -244,12 +242,15 @@ export async function streamAiTurnAction(
           (planConfigSnapshot?.maxFollowUpsPerTopic as number) || 2;
         const maxFollowUpsReached = followUpCount >= maxFollowUps;
 
+        const isLastTopic = activeTopic.topicIndex === interview.totalTopics - 1;
+
         aiResult = await generateFollowUp(
           candidateProfile,
           plannedTopic,
           previousTopics,
           activeTopic.turns,
           maxFollowUpsReached,
+          isLastTopic,
         );
       }
 
@@ -279,11 +280,12 @@ export async function streamAiTurnAction(
           turnType = "TOPIC_CLOSURE";
           moveToNext = true;
           closeReason = "MAX_FOLLOWUPS_REACHED";
-        } else if (fullText.includes("[NEXT_TOPIC]")) {
+          fullText = fullText.replace("[NEXT_TOPIC]", "").replace("[END_INTERVIEW]", "").trim();
+        } else if (fullText.includes("[NEXT_TOPIC]") || fullText.includes("[END_INTERVIEW]")) {
           turnType = "TOPIC_CLOSURE";
           moveToNext = true;
           closeReason = "AI_COMPLETED";
-          fullText = fullText.replace("[NEXT_TOPIC]", "").trim();
+          fullText = fullText.replace("[NEXT_TOPIC]", "").replace("[END_INTERVIEW]", "").trim();
         }
       }
 
@@ -454,3 +456,42 @@ export async function startNextTopicAction(
     return failure("Failed to start next topic", "INTERNAL_ERROR");
   }
 }
+
+// 4. End Interview and Generate Report
+export async function endInterviewAction(
+  interviewId: string,
+): Promise<ActionResult<{ success: boolean }>> {
+  try {
+    const session = await getSession();
+    if (!session) return failure("Unauthorized", "UNAUTHORIZED");
+
+    const interview = await prisma.interview.findUnique({
+      where: { id: interviewId, userId: session.user.id },
+    });
+
+    if (!interview) return failure("Interview not found", "NOT_FOUND");
+    if (interview.status === "COMPLETED") {
+      return success({ success: true });
+    }
+
+    await prisma.$transaction([
+      prisma.interviewTopic.updateMany({
+        where: { interviewId, status: "PENDING" },
+        data: { status: "SKIPPED" }
+      }),
+      prisma.interview.update({
+        where: { id: interviewId },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+        },
+      })
+    ]);
+
+    return success({ success: true });
+  } catch (error) {
+    console.error("Failed to end interview", error);
+    return failure("Failed to end interview", "INTERNAL_ERROR");
+  }
+}
+
