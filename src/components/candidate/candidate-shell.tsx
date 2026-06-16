@@ -120,8 +120,10 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
               {totalCredits} {totalCredits === 1 ? 'Credit' : 'Credits'}
             </Link>
 
+            <div className="hidden md:block h-5 w-px bg-border ml-2" />
+
             <ThemeToggle />
-            <div className="hidden md:block h-5 w-px bg-border mx-1" />
+            <div className="hidden md:block h-5 w-px bg-border mr-1" />
 
             {/* Avatar dropdown */}
             <DropdownMenu>
@@ -131,8 +133,8 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
                     name={session.user.name}
                     email={session.user.email}
                     image={session.user.image}
+                    compact
                   />
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden md:block group-hover:text-foreground transition-colors" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52 mt-2">
