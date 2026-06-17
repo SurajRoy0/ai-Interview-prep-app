@@ -10,7 +10,7 @@ export default async function InterviewRouterPage({
 }) {
   const { id } = await params
   const session = await getSession()
-  
+
   if (!session) {
     redirect('/login')
   }
@@ -39,6 +39,6 @@ export default async function InterviewRouterPage({
     redirect(`/candidate/interview/${id}/session`)
   }
 
-  // 2. Post-Interview Dashboard (for COMPLETED or FAILED)
+  // Post-Interview Dashboard (for COMPLETED or FAILED)
   return <SummaryTabs interviewId={id} initialInterview={interview} />
 }

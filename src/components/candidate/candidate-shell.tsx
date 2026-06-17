@@ -224,7 +224,7 @@ export function CandidateShell({ session, totalCredits = 0, children }: Props) {
       )}
 
       {/* ── Main content ────────────────────────────────────────────────────── */}
-      <main className={cn("relative z-10 flex-1 w-full min-h-0", isInterviewSession ? "flex flex-col p-0" : "max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-10")}>
+      <main className={cn("relative z-10 flex-1 w-full min-h-0", isInterviewSession ? "flex flex-col p-0" : "max-w-6xl mx-auto px-4 py-6")}>
         {children}
       </main>
 

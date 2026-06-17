@@ -65,29 +65,21 @@ export default async function JobProfileDetailPage({
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border/50 pb-6">
-        <div className="flex items-start gap-4">
-          <Link
-            href="/candidate/dashboard"
-            className="mt-1 flex items-center justify-center h-8 w-8 rounded-full hover:bg-surface-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            title="Back to Dashboard"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-                {profile.title}
-              </h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1">
-              <span className="font-medium text-foreground">{profile.targetRole}</span>
-              <span className="w-1 h-1 rounded-full bg-border" />
-              <span>{profile.experienceLevel}</span>
-              <span className="w-1 h-1 rounded-full bg-border" />
-              <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 font-medium border-border/60">
-                {profile.ecosystem || "Language Agnostic"}
-              </Badge>
-            </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+              {profile.title}
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1">
+            <span className="font-medium text-foreground">{profile.targetRole}</span>
+            <span className="w-1 h-1 rounded-full bg-border" />
+            <span>{profile.experienceLevel}</span>
+            <span className="w-1 h-1 rounded-full bg-border" />
+            <Badge variant="outline" className="text-[10px] px-2 py-0 h-5 font-medium border-border/60">
+              {profile.ecosystem || "Language Agnostic"}
+            </Badge>
           </div>
         </div>
       </div>
@@ -237,12 +229,11 @@ export default async function JobProfileDetailPage({
                           <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
                             {interview.title || "Mock Interview"}
                           </p>
-                          <Badge variant="outline" className={`text-[9px] h-4 px-1.5 font-semibold ${
-                            interview.status === 'COMPLETED' ? 'border-green-500/50 text-green-600' :
-                            interview.status === 'ACTIVE' || interview.status === 'PAUSED' ? 'border-blue-500/50 text-blue-600' :
-                            interview.status === 'FAILED' ? 'border-destructive/50 text-destructive' :
-                            'border-muted-foreground/30 text-muted-foreground'
-                          }`}>
+                          <Badge variant="outline" className={`text-[9px] h-4 px-1.5 font-semibold ${interview.status === 'COMPLETED' ? 'border-green-500/50 text-green-600' :
+                              interview.status === 'ACTIVE' || interview.status === 'PAUSED' ? 'border-blue-500/50 text-blue-600' :
+                                interview.status === 'FAILED' ? 'border-destructive/50 text-destructive' :
+                                  'border-muted-foreground/30 text-muted-foreground'
+                            }`}>
                             {interview.status}
                           </Badge>
                         </div>

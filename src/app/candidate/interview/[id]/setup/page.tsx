@@ -30,7 +30,7 @@ export default async function InterviewSetupPage({
   }
 
   return (
-    <div className="flex flex-col min-h-[60vh] max-w-4xl mx-auto w-full p-4 md:p-8">
+    <div className="flex flex-col mx-auto w-full">
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
           Interview Setup
@@ -40,10 +40,10 @@ export default async function InterviewSetupPage({
         </p>
       </div>
 
-      <SetupPoller 
-        interviewId={id} 
-        initialPlanStatus={interview.planStatus} 
-        initialPlanGenerated={interview.planGenerated} 
+      <SetupPoller
+        interviewId={id}
+        initialPlanStatus={interview.planStatus}
+        initialPlanGenerated={interview.planGenerated}
       />
     </div>
   )
