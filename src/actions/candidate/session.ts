@@ -274,6 +274,7 @@ export async function streamAiTurnAction(
 
         if (nextTopic) {
 
+          
           // Wait 5 seconds before activating the next topic so the candidate has time to read the AI's final response
           await new Promise(resolve => setTimeout(resolve, 5000))
 
