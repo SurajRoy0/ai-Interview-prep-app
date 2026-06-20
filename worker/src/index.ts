@@ -3,6 +3,7 @@ import { QUEUE_NAMES } from '@repo/shared'
 import { connection } from './queues/client'
 import { processResumeJob } from './processors/resume.processor'
 import { processInterviewPlanJob } from './processors/plan.processor'
+import { processTopicJudgingJob } from './processors/judge.processor'
 
 console.log('Starting FoxTel Background Worker...')
 console.log(`Connected to Redis at ${process.env.REDIS_URL || 'redis://localhost:6379'}`)
@@ -16,6 +17,14 @@ const resumeWorker = new Worker(
 const planWorker = new Worker(
   QUEUE_NAMES.INTERVIEW_PLAN_GENERATION,
   processInterviewPlanJob,
+  { connection }
+)
+
+
+// Worker for judging candidate responses to topics
+const judgeWorker = new Worker(
+  QUEUE_NAMES.TOPIC_JUDGING,
+  processTopicJudgingJob,
   { connection }
 )
 
@@ -35,11 +44,21 @@ planWorker.on('failed', (job, err) => {
   console.error(`[PlanWorker] Job ${job?.id} failed:`, err.message)
 })
 
+judgeWorker.on('completed', (job) => {
+  console.log(`[JudgeWorker] Job ${job.id} completed successfully`)
+})
+
+judgeWorker.on('failed', (job, err) => {
+  console.error(`[JudgeWorker] Job ${job?.id} failed:`, err.message)
+})
+
+
 const gracefulShutdown = async (signal: string) => {
   console.log(`\nReceived ${signal}, closing workers...`)
   await Promise.all([
     resumeWorker.close(),
     planWorker.close(),
+    judgeWorker.close()
   ])
   console.log('Workers closed successfully.')
   process.exit(0)

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog"
-import { Trash2, Save, ArrowLeft, Settings, Clock, Brain, FileText, BarChart3, Bot } from "lucide-react"
+import { Trash2, Save, ArrowLeft, Settings, Clock, Brain, FileText, BarChart3 } from "lucide-react"
 
 const activityConfigExample = `{
   "DEBUGGING": 2,

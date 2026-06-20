@@ -41,11 +41,6 @@ export async function getBillingHistoryAction() {
 
     const ledger: BillingLedgerEntry[] = []
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { createdAt: true },
-    })
-
     for (const p of payments) {
       ledger.push({
         id: p.id,

@@ -78,7 +78,7 @@ export function SetupPoller({ interviewId, initialPlanStatus, initialPlanGenerat
         setMicChecked(true)
         toast.success("Microphone connected successfully!")
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error("Please allow microphone access to proceed.")
       })
   }

@@ -4,7 +4,7 @@ import { PsychologicalIntent, QuestionCategory, QuestionDifficulty, ActivityType
 export const interviewPlanTopicSchema = z.object({
   intent: z.nativeEnum(PsychologicalIntent),
   category: z.nativeEnum(QuestionCategory),
-  activityType: z.nativeEnum(ActivityType).optional().describe('Must be provided if category is ACTIVITY'),
+  activityType: z.nativeEnum(ActivityType).nullable().describe('Must be provided if category is ACTIVITY'), // optional()
   targetSkills: z.array(z.string()).describe('Specific skills to assess'),
   plannedDifficulty: z.nativeEnum(QuestionDifficulty),
   reasoning: z.string().describe('Why this topic was chosen based on the resume or job profile'),

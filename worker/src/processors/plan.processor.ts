@@ -61,6 +61,7 @@ export async function processInterviewPlanJob(job: Job<{ interviewId: string }>)
             interviewId,
             topicIndex: index,
             type: topic.category === 'ACTIVITY' ? 'ACTIVITY' : 'QA',
+            reasoning: topic.reasoning || null,
             activityType: topic.activityType || null,
             status: 'PENDING',
             plannedCategory: topic.category,

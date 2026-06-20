@@ -661,6 +661,8 @@ model InterviewTopic {
   // candidate's running performance (for ADAPTIVE difficulty).
   questionText String? @db.Text
 
+  reasoning         String?  @db.Text // AI's internal reasoning for question selection — never shown to candidate, only for audit and analysis
+
   // ── ACTIVITY-ONLY FIELDS ─────────────────────────────────
   activityType   ActivityType?
   codeSnippet    String?       @db.Text // shown to candidate in code editor
